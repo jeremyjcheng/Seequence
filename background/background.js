@@ -259,6 +259,7 @@ class AIProcessorFallback {
       nodes: nodes,
       edges: edges,
       type: analysis.type,
+      originalText: text, // Include original text for summary generation
     };
 
     console.log("Diagram data generated (fallback):", diagramData);
