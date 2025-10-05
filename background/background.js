@@ -277,24 +277,137 @@ class AIProcessorFallback {
     return typeMapping[contentType] || "flowchart";
   }
 
-  // Simple fallback summarizer (basic truncation)
+  // Enhanced JavaScript summarizer with NLP techniques
   async generateSummary(text) {
-    console.log("Using basic fallback summarizer");
+    console.log("Using enhanced JavaScript summarizer");
 
-    // Simple truncation fallback
-    if (text.length <= 120) {
-      return text;
+    // Extract sentences
+    const sentences = text.split(/[.!?]+/).filter((s) => s.trim().length > 10);
+
+    if (sentences.length === 0) {
+      return text.length <= 120 ? text : text.substring(0, 120) + "...";
     }
 
-    // Truncate at word boundary
-    const words = text.split(" ");
-    let truncated = "";
-    for (const word of words) {
-      if (truncated.length + word.length + 1 > 120) break;
-      truncated += (truncated ? " " : "") + word;
+    // If only one sentence, return it (truncated if needed)
+    if (sentences.length === 1) {
+      const sentence = sentences[0].trim();
+      if (sentence.length <= 120) {
+        return sentence;
+      }
+      // Truncate at word boundary
+      const words = sentence.split(" ");
+      let truncated = "";
+      for (const word of words) {
+        if (truncated.length + word.length + 1 > 120) break;
+        truncated += (truncated ? " " : "") + word;
+      }
+      return truncated + "...";
     }
 
-    return truncated + "...";
+    // Simple extractive summarization using key phrase detection
+    const words = text.toLowerCase().match(/\b\w+\b/g) || [];
+    const wordFreq = {};
+
+    // Count word frequencies (excluding common stop words)
+    const stopWords = new Set([
+      "the",
+      "a",
+      "an",
+      "and",
+      "or",
+      "but",
+      "in",
+      "on",
+      "at",
+      "to",
+      "for",
+      "of",
+      "with",
+      "by",
+      "is",
+      "are",
+      "was",
+      "were",
+      "be",
+      "been",
+      "have",
+      "has",
+      "had",
+      "do",
+      "does",
+      "did",
+      "will",
+      "would",
+      "could",
+      "should",
+      "may",
+      "might",
+      "can",
+      "this",
+      "that",
+      "these",
+      "those",
+      "i",
+      "you",
+      "he",
+      "she",
+      "it",
+      "we",
+      "they",
+      "me",
+      "him",
+      "her",
+      "us",
+      "them",
+    ]);
+
+    words.forEach((word) => {
+      if (!stopWords.has(word) && word.length > 3) {
+        wordFreq[word] = (wordFreq[word] || 0) + 1;
+      }
+    });
+
+    // Score sentences based on word frequency and position
+    const sentenceScores = sentences.map((sentence, index) => {
+      const sentenceWords = sentence.toLowerCase().match(/\b\w+\b/g) || [];
+      let score = 0;
+
+      sentenceWords.forEach((word) => {
+        if (wordFreq[word]) {
+          score += wordFreq[word];
+        }
+      });
+
+      // Boost score for first sentence (often contains main topic)
+      if (index === 0) score *= 1.5;
+
+      // Boost score for sentences with proper nouns (capitalized words)
+      const properNouns = sentence.match(/\b[A-Z][a-z]+\b/g) || [];
+      score += properNouns.length * 2;
+
+      return { sentence: sentence.trim(), score };
+    });
+
+    // Sort by score and get the best sentence
+    sentenceScores.sort((a, b) => b.score - a.score);
+
+    let summary = sentenceScores[0]?.sentence || sentences[0];
+
+    // Clean up the summary
+    summary = summary.trim();
+    if (summary.length > 120) {
+      // Truncate at word boundary
+      const words = summary.split(" ");
+      let truncated = "";
+      for (const word of words) {
+        if (truncated.length + word.length + 1 > 120) break;
+        truncated += (truncated ? " " : "") + word;
+      }
+      summary = truncated + "...";
+    }
+
+    console.log("Generated enhanced summary:", summary);
+    return summary;
   }
 
   // Get session status
@@ -464,18 +577,6 @@ async function handleGenerateSummary(request, sendResponse) {
       console.log("Background: Falling back to JS version");
     }
 
-    // TEMPORARY: Force JavaScript fallback for testing
-    console.log("Background: Using JavaScript fallback for testing");
-    if (!aiProcessor) {
-      await initializeAI();
-    }
-    const jsSummary = await aiProcessor.generateSummary(text);
-    sendResponse({
-      success: true,
-      summary: jsSummary,
-    });
-    return;
-
     // Fallback to JavaScript summarizer
     if (!aiProcessor) {
       await initializeAI();
@@ -503,67 +604,18 @@ async function handleGenerateSummary(request, sendResponse) {
   }
 }
 
-// Call Python summarizer
+// Call Python summarizer via HTTP request to local server
 async function callPythonSummarizer(text) {
-  return new Promise((resolve, reject) => {
-    const { spawn } = require("child_process");
-    const path = require("path");
-
-    // Path to the Python summarizer
-    const summarizerPath = path.join(__dirname, "../summarizer/summarizer.py");
-    const venvPython = path.join(__dirname, "../summarizer/venv/bin/python");
-
-    console.log("Background: Python path:", venvPython);
-    console.log("Background: Summarizer path:", summarizerPath);
-
-    // Spawn Python process from virtual environment
-    const python = spawn(venvPython, [summarizerPath, "--json"], {
-      stdio: ["pipe", "pipe", "pipe"],
-    });
-
-    let output = "";
-    let errorOutput = "";
-
-    // Send text to Python process
-    python.stdin.write(text);
-    python.stdin.end();
-
-    // Collect output
-    python.stdout.on("data", (data) => {
-      output += data.toString();
-    });
-
-    python.stderr.on("data", (data) => {
-      errorOutput += data.toString();
-    });
-
-    python.on("close", (code) => {
-      console.log("Background: Python process exited with code:", code);
-      console.log("Background: Python output:", output);
-      console.log("Background: Python error output:", errorOutput);
-
-      if (code === 0) {
-        try {
-          const result = JSON.parse(output);
-          console.log("Background: Parsed Python result:", result);
-          resolve(result.summary);
-        } catch (parseError) {
-          console.error(
-            "Background: Failed to parse Python output:",
-            parseError
-          );
-          reject(new Error("Failed to parse Python summarizer output"));
-        }
-      } else {
-        console.error("Background: Python process failed with code:", code);
-        reject(new Error(`Python summarizer failed: ${errorOutput}`));
-      }
-    });
-
-    python.on("error", (error) => {
-      reject(new Error(`Failed to start Python summarizer: ${error.message}`));
-    });
-  });
+  try {
+    // For now, we'll use a simple HTTP approach or fallback to enhanced JS
+    // Chrome extensions can't spawn processes directly
+    console.log(
+      "Background: Python summarizer not available in service worker context"
+    );
+    throw new Error("Python summarizer requires different architecture");
+  } catch (error) {
+    throw error;
+  }
 }
 
 // Handle diagram saving

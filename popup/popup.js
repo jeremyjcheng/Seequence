@@ -75,20 +75,15 @@ document.addEventListener("DOMContentLoaded", async () => {
 
   async function showSelectedText(text) {
     // Generate a summary instead of just truncating
-    console.log("Generating summary for text:", text.substring(0, 100) + "...");
     try {
       const summaryResponse = await chrome.runtime.sendMessage({
         action: "generateSummary",
         text: text,
       });
 
-      console.log("Summary response:", summaryResponse);
-
       if (summaryResponse.success) {
-        console.log("Using generated summary:", summaryResponse.summary);
         selectedTextElement.textContent = summaryResponse.summary;
       } else {
-        console.log("Summary failed, using fallback truncation");
         // Fallback to truncation if summary fails
         const previewText =
           text.length > 200 ? text.substring(0, 200) + "..." : text;
