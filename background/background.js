@@ -29,9 +29,12 @@ async function initializeAI() {
       aiProcessor = new window.AIProcessor();
       const isAvailable = await aiProcessor.checkAvailability();
       console.log("AI Processor initialized:", isAvailable);
+    } else {
+      console.error("AIProcessor class not found after import");
     }
   } catch (error) {
     console.error("Error initializing AI processor:", error);
+    console.error("Error details:", error.stack);
   }
 }
 

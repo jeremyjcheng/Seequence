@@ -95,12 +95,21 @@ document.addEventListener("DOMContentLoaded", async () => {
       });
 
       if (response && response.selectedText) {
+        console.log("Selected text length:", response.selectedText.length);
+
         // Check AI availability first
         const aiStatus = await chrome.runtime.sendMessage({
           action: "checkAIAvailability",
         });
 
-        if (!aiStatus.success || !aiStatus.status.available) {
+        console.log("AI Status response:", aiStatus);
+
+        if (!aiStatus.success) {
+          showError(`AI check failed: ${aiStatus.error}`);
+          return;
+        }
+
+        if (!aiStatus.status.available) {
           showError(
             "AI processing not available. Please ensure Chrome flags are enabled and you have the required hardware."
           );
@@ -114,16 +123,22 @@ document.addEventListener("DOMContentLoaded", async () => {
           diagramType: "auto",
         });
 
+        console.log("Process response:", processResponse);
+
         if (processResponse.success) {
           // Show the generated diagram data (for now, just display it)
           showDiagramResult(processResponse.data);
         } else {
           showError(`AI processing failed: ${processResponse.error}`);
         }
+      } else {
+        showError("No text selected or text selection failed.");
       }
     } catch (error) {
       console.error("Error creating diagram:", error);
-      showError("An error occurred while processing the text.");
+      showError(
+        `An error occurred while processing the text: ${error.message}`
+      );
     }
   }
 

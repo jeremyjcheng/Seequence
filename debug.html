@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Seequence Debug</title>
+  </head>
+  <body>
+    <h1>Seequence AI Debug</h1>
+    <div id="status"></div>
+    <button onclick="checkAI()">Check AI Availability</button>
+    <button onclick="testAI()">Test AI Processing</button>
+    <div id="results"></div>
+
+    <script>
+      async function checkAI() {
+        const statusDiv = document.getElementById("status");
+        const resultsDiv = document.getElementById("results");
+
+        try {
+          // Check if AI API exists
+          if (typeof window.ai === "undefined") {
+            statusDiv.innerHTML = "window.ai is not defined";
+            return;
+          }
+
+          if (typeof window.ai.languageModel === "undefined") {
+            statusDiv.innerHTML = "window.ai.languageModel is not defined";
+            return;
+          }
+
+          statusDiv.innerHTML = "AI API objects exist";
+
+          // Check capabilities
+          const capabilities = await window.ai.languageModel.capabilities();
+          resultsDiv.innerHTML = `<pre>Capabilities: ${JSON.stringify(
+            capabilities,
+            null,
+            2
+          )}</pre>`;
+
+          if (capabilities.available === "no") {
+            statusDiv.innerHTML += "<br>I is not available";
+          } else {
+            statusDiv.innerHTML += "<br>AI is available";
+          }
+        } catch (error) {
+          statusDiv.innerHTML = `Error: ${error.message}`;
+          resultsDiv.innerHTML = `<pre>${error.stack}</pre>`;
+        }
+      }
+
+      async function testAI() {
+        const resultsDiv = document.getElementById("results");
+
+        try {
+          const session = await window.ai.languageModel.create();
+          const result = await session.prompt(
+            "Hello, can you respond with 'AI is working'?"
+          );
+          resultsDiv.innerHTML = `<pre>AI Response: ${result}</pre>`;
+        } catch (error) {
+          resultsDiv.innerHTML = `<pre>AI Test Error: ${error.message}\n${error.stack}</pre>`;
+        }
+      }
+    </script>
+  </body>
+</html>
