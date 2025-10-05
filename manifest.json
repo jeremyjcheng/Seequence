@@ -14,7 +14,7 @@
 
   "web_accessible_resources": [
     {
-      "resources": ["diagrams/diagram-renderer.js"],
+      "resources": ["diagrams/diagram-renderer.js", "popup/d3.min.js"],
       "matches": ["<all_urls>"]
     }
   ],

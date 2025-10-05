@@ -86,9 +86,23 @@ document.addEventListener("DOMContentLoaded", async () => {
     processingDiv.classList.add("hidden");
     diagramViewDiv.classList.remove("hidden");
 
+    // Check if D3 is available
+    if (typeof d3 === "undefined") {
+      showError(
+        "D3.js library failed to load. Please refresh the extension and try again."
+      );
+      return;
+    }
+
     // Initialize diagram renderer if needed
     if (!diagramRenderer) {
-      diagramRenderer = new DiagramRenderer("diagram-container");
+      try {
+        diagramRenderer = new DiagramRenderer("diagram-container");
+      } catch (error) {
+        console.error("Failed to create diagram renderer:", error);
+        showError("Failed to initialize diagram renderer. Please try again.");
+        return;
+      }
     }
 
     // Store current diagram data
@@ -98,7 +112,12 @@ document.addEventListener("DOMContentLoaded", async () => {
     diagramTitleElement.textContent = diagramData.title || "Generated Diagram";
 
     // Render the diagram
-    diagramRenderer.render(diagramData, diagramData.layout);
+    try {
+      diagramRenderer.render(diagramData, diagramData.layout);
+    } catch (error) {
+      console.error("Failed to render diagram:", error);
+      showError("Failed to render diagram. Please try again.");
+    }
   }
 
   function showError(message) {

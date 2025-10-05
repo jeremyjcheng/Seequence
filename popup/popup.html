@@ -67,7 +67,15 @@
     </div>
 
     <!-- D3.js for diagram rendering -->
-    <script src="https://d3js.org/d3.v7.min.js"></script>
+    <script src="d3.min.js"></script>
+    <script>
+      // Check if D3 loaded successfully
+      if (typeof d3 === "undefined") {
+        console.error("D3.js failed to load");
+      } else {
+        console.log("D3.js loaded successfully");
+      }
+    </script>
     <script src="../diagrams/diagram-renderer.js"></script>
     <script src="popup.js"></script>
   </body>
