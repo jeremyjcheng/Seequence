@@ -51,9 +51,16 @@ document.addEventListener("DOMContentLoaded", async () => {
           action: "getSelectedText",
         });
 
+        console.log("Popup: Content script response:", response);
+
         if (response && response.selectedText && response.selectedText.trim()) {
+          console.log(
+            "Popup: Calling showSelectedText with text length:",
+            response.selectedText.length
+          );
           showSelectedText(response.selectedText);
         } else {
+          console.log("Popup: No selected text, showing no selection state");
           showNoSelection();
         }
       } catch (contentScriptError) {
@@ -75,25 +82,38 @@ document.addEventListener("DOMContentLoaded", async () => {
 
   async function showSelectedText(text) {
     // Generate a summary instead of just truncating
+    console.log("Popup: Requesting summary for text length:", text.length);
+    console.log("Popup: selectedTextElement:", selectedTextElement);
+
+    if (!selectedTextElement) {
+      console.error("Popup: selectedTextElement not found!");
+      return;
+    }
+
     try {
       const summaryResponse = await chrome.runtime.sendMessage({
         action: "generateSummary",
         text: text,
       });
 
+      console.log("Popup: Received summary response:", summaryResponse);
+
       if (summaryResponse.success) {
+        console.log("Popup: Setting summary text:", summaryResponse.summary);
         selectedTextElement.textContent = summaryResponse.summary;
         // Reset styling for successful summary
         selectedTextElement.style.color = "#333";
         selectedTextElement.style.fontStyle = "italic";
+        console.log("Popup: Summary text set successfully");
       } else {
+        console.log("Popup: Summary failed:", summaryResponse.error);
         // Show error message instead of fallback
         selectedTextElement.textContent = "⚠️ " + summaryResponse.error;
         selectedTextElement.style.color = "#e74c3c";
         selectedTextElement.style.fontStyle = "normal";
       }
     } catch (error) {
-      console.error("Error generating summary:", error);
+      console.error("Popup: Error generating summary:", error);
       // Show error message
       selectedTextElement.textContent =
         "⚠️ Python summarizer server not available. Please start the server with: ./start-python-summarizer.sh";
