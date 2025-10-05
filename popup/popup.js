@@ -83,18 +83,22 @@ document.addEventListener("DOMContentLoaded", async () => {
 
       if (summaryResponse.success) {
         selectedTextElement.textContent = summaryResponse.summary;
+        // Reset styling for successful summary
+        selectedTextElement.style.color = "#333";
+        selectedTextElement.style.fontStyle = "italic";
       } else {
-        // Fallback to truncation if summary fails
-        const previewText =
-          text.length > 200 ? text.substring(0, 200) + "..." : text;
-        selectedTextElement.textContent = previewText;
+        // Show error message instead of fallback
+        selectedTextElement.textContent = "⚠️ " + summaryResponse.error;
+        selectedTextElement.style.color = "#e74c3c";
+        selectedTextElement.style.fontStyle = "normal";
       }
     } catch (error) {
       console.error("Error generating summary:", error);
-      // Fallback to truncation
-      const previewText =
-        text.length > 200 ? text.substring(0, 200) + "..." : text;
-      selectedTextElement.textContent = previewText;
+      // Show error message
+      selectedTextElement.textContent =
+        "⚠️ Python summarizer server not available. Please start the server with: ./start-python-summarizer.sh";
+      selectedTextElement.style.color = "#e74c3c";
+      selectedTextElement.style.fontStyle = "normal";
     }
 
     noSelectionDiv.classList.add("hidden");

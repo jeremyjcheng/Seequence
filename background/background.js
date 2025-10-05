@@ -277,137 +277,24 @@ class AIProcessorFallback {
     return typeMapping[contentType] || "flowchart";
   }
 
-  // Enhanced JavaScript summarizer with NLP techniques
+  // Simple fallback summarizer (basic truncation only)
   async generateSummary(text) {
-    console.log("Using enhanced JavaScript summarizer");
+    console.log("Using basic fallback summarizer");
 
-    // Extract sentences
-    const sentences = text.split(/[.!?]+/).filter((s) => s.trim().length > 10);
-
-    if (sentences.length === 0) {
-      return text.length <= 120 ? text : text.substring(0, 120) + "...";
+    // Simple truncation fallback
+    if (text.length <= 120) {
+      return text;
     }
 
-    // If only one sentence, return it (truncated if needed)
-    if (sentences.length === 1) {
-      const sentence = sentences[0].trim();
-      if (sentence.length <= 120) {
-        return sentence;
-      }
-      // Truncate at word boundary
-      const words = sentence.split(" ");
-      let truncated = "";
-      for (const word of words) {
-        if (truncated.length + word.length + 1 > 120) break;
-        truncated += (truncated ? " " : "") + word;
-      }
-      return truncated + "...";
+    // Truncate at word boundary
+    const words = text.split(" ");
+    let truncated = "";
+    for (const word of words) {
+      if (truncated.length + word.length + 1 > 120) break;
+      truncated += (truncated ? " " : "") + word;
     }
 
-    // Simple extractive summarization using key phrase detection
-    const words = text.toLowerCase().match(/\b\w+\b/g) || [];
-    const wordFreq = {};
-
-    // Count word frequencies (excluding common stop words)
-    const stopWords = new Set([
-      "the",
-      "a",
-      "an",
-      "and",
-      "or",
-      "but",
-      "in",
-      "on",
-      "at",
-      "to",
-      "for",
-      "of",
-      "with",
-      "by",
-      "is",
-      "are",
-      "was",
-      "were",
-      "be",
-      "been",
-      "have",
-      "has",
-      "had",
-      "do",
-      "does",
-      "did",
-      "will",
-      "would",
-      "could",
-      "should",
-      "may",
-      "might",
-      "can",
-      "this",
-      "that",
-      "these",
-      "those",
-      "i",
-      "you",
-      "he",
-      "she",
-      "it",
-      "we",
-      "they",
-      "me",
-      "him",
-      "her",
-      "us",
-      "them",
-    ]);
-
-    words.forEach((word) => {
-      if (!stopWords.has(word) && word.length > 3) {
-        wordFreq[word] = (wordFreq[word] || 0) + 1;
-      }
-    });
-
-    // Score sentences based on word frequency and position
-    const sentenceScores = sentences.map((sentence, index) => {
-      const sentenceWords = sentence.toLowerCase().match(/\b\w+\b/g) || [];
-      let score = 0;
-
-      sentenceWords.forEach((word) => {
-        if (wordFreq[word]) {
-          score += wordFreq[word];
-        }
-      });
-
-      // Boost score for first sentence (often contains main topic)
-      if (index === 0) score *= 1.5;
-
-      // Boost score for sentences with proper nouns (capitalized words)
-      const properNouns = sentence.match(/\b[A-Z][a-z]+\b/g) || [];
-      score += properNouns.length * 2;
-
-      return { sentence: sentence.trim(), score };
-    });
-
-    // Sort by score and get the best sentence
-    sentenceScores.sort((a, b) => b.score - a.score);
-
-    let summary = sentenceScores[0]?.sentence || sentences[0];
-
-    // Clean up the summary
-    summary = summary.trim();
-    if (summary.length > 120) {
-      // Truncate at word boundary
-      const words = summary.split(" ");
-      let truncated = "";
-      for (const word of words) {
-        if (truncated.length + word.length + 1 > 120) break;
-        truncated += (truncated ? " " : "") + word;
-      }
-      summary = truncated + "...";
-    }
-
-    console.log("Generated enhanced summary:", summary);
-    return summary;
+    return truncated + "...";
   }
 
   // Get session status
@@ -574,27 +461,15 @@ async function handleGenerateSummary(request, sendResponse) {
       return;
     } catch (pythonError) {
       console.log("Background: Python summarizer failed:", pythonError.message);
-      console.log("Background: Falling back to JS version");
-    }
 
-    // Fallback to JavaScript summarizer
-    if (!aiProcessor) {
-      await initializeAI();
-    }
-
-    if (!aiProcessor || !aiProcessor.isAvailable) {
+      // No fallback - require Python server
       sendResponse({
         success: false,
-        error: "No summarizer available",
+        error:
+          "Python summarizer server not available. Please start the server with: ./start-python-summarizer.sh",
       });
       return;
     }
-
-    const summary = await aiProcessor.generateSummary(text);
-    sendResponse({
-      success: true,
-      summary: summary,
-    });
   } catch (error) {
     console.error("Error generating summary:", error);
     sendResponse({
@@ -607,13 +482,38 @@ async function handleGenerateSummary(request, sendResponse) {
 // Call Python summarizer via HTTP request to local server
 async function callPythonSummarizer(text) {
   try {
-    // For now, we'll use a simple HTTP approach or fallback to enhanced JS
-    // Chrome extensions can't spawn processes directly
     console.log(
-      "Background: Python summarizer not available in service worker context"
+      "Background: Attempting to connect to Python summarizer server..."
     );
-    throw new Error("Python summarizer requires different architecture");
+
+    const response = await fetch("http://localhost:8080/summarize", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        text: text,
+        max_length: 120,
+      }),
+    });
+
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+
+    const result = await response.json();
+
+    if (result.success) {
+      console.log("Background: Python summarizer succeeded:", result.summary);
+      return result.summary;
+    } else {
+      throw new Error(result.error || "Unknown error from Python summarizer");
+    }
   } catch (error) {
+    console.log(
+      "Background: Python summarizer server not available:",
+      error.message
+    );
     throw error;
   }
 }

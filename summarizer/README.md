@@ -32,21 +32,41 @@ This will install:
 
 ```bash
 # Summarize text directly
-python3 summarizer.py --text "Your text here"
+source venv/bin/activate && python summarizer.py --text "Your text here"
 
 # Summarize from file
-cat your_file.txt | python3 summarizer.py
+source venv/bin/activate && cat your_file.txt | python summarizer.py
 
 # Get JSON output
-python3 summarizer.py --text "Your text here" --json
+source venv/bin/activate && python summarizer.py --text "Your text here" --json
 
 # Custom max length
-python3 summarizer.py --text "Your text here" --max-length 150
+source venv/bin/activate && python summarizer.py --text "Your text here" --max-length 150
+```
+
+### HTTP Server Mode (Recommended for Chrome Extension)
+
+```bash
+# Start the server
+./start-python-summarizer.sh
+
+# Test the server
+curl -X POST http://localhost:8080/summarize \
+  -H "Content-Type: application/json" \
+  -d '{"text": "Your text here", "max_length": 120}'
+
+# Stop the server
+./stop-python-summarizer.sh
 ```
 
 ### Integration with Chrome Extension
 
-The Chrome extension automatically calls this Python script when available. It falls back to JavaScript-based summarization if Python is not available.
+The Chrome extension connects to the Python server via HTTP requests. This provides:
+
+- **Advanced NLP**: Full NLTK and spaCy capabilities
+- **Local Processing**: All data stays on your device
+- **High Performance**: Dedicated Python process
+- **Fallback Support**: JavaScript summarizer if server unavailable
 
 ## How It Works
 
