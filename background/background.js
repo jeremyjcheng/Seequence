@@ -447,20 +447,34 @@ async function handleAICheck(sendResponse) {
 async function handleGenerateSummary(request, sendResponse) {
   try {
     const { text } = request;
+    console.log("Background: Generating summary for text length:", text.length);
 
     // Try Python summarizer first
     try {
+      console.log("Background: Attempting Python summarizer...");
       const summary = await callPythonSummarizer(text);
+      console.log("Background: Python summarizer succeeded:", summary);
       sendResponse({
         success: true,
         summary: summary,
       });
       return;
     } catch (pythonError) {
-      console.log(
-        "Python summarizer not available, falling back to JS version"
-      );
+      console.log("Background: Python summarizer failed:", pythonError.message);
+      console.log("Background: Falling back to JS version");
     }
+
+    // TEMPORARY: Force JavaScript fallback for testing
+    console.log("Background: Using JavaScript fallback for testing");
+    if (!aiProcessor) {
+      await initializeAI();
+    }
+    const jsSummary = await aiProcessor.generateSummary(text);
+    sendResponse({
+      success: true,
+      summary: jsSummary,
+    });
+    return;
 
     // Fallback to JavaScript summarizer
     if (!aiProcessor) {
@@ -497,9 +511,12 @@ async function callPythonSummarizer(text) {
 
     // Path to the Python summarizer
     const summarizerPath = path.join(__dirname, "../summarizer/summarizer.py");
+    const venvPython = path.join(__dirname, "../summarizer/venv/bin/python");
+
+    console.log("Background: Python path:", venvPython);
+    console.log("Background: Summarizer path:", summarizerPath);
 
     // Spawn Python process from virtual environment
-    const venvPython = path.join(__dirname, "../summarizer/venv/bin/python");
     const python = spawn(venvPython, [summarizerPath, "--json"], {
       stdio: ["pipe", "pipe", "pipe"],
     });
@@ -521,14 +538,24 @@ async function callPythonSummarizer(text) {
     });
 
     python.on("close", (code) => {
+      console.log("Background: Python process exited with code:", code);
+      console.log("Background: Python output:", output);
+      console.log("Background: Python error output:", errorOutput);
+
       if (code === 0) {
         try {
           const result = JSON.parse(output);
+          console.log("Background: Parsed Python result:", result);
           resolve(result.summary);
         } catch (parseError) {
+          console.error(
+            "Background: Failed to parse Python output:",
+            parseError
+          );
           reject(new Error("Failed to parse Python summarizer output"));
         }
       } else {
+        console.error("Background: Python process failed with code:", code);
         reject(new Error(`Python summarizer failed: ${errorOutput}`));
       }
     });
