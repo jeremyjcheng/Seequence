@@ -188,6 +188,65 @@ body {
   margin: 0;
 }
 
+/* Diagram view styles */
+.diagram-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid #e1e5e9;
+}
+
+.diagram-header h3 {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 600;
+  color: #1a1a1a;
+}
+
+.diagram-controls {
+  display: flex;
+  gap: 6px;
+}
+
+.control-button {
+  background: transparent;
+  color: #666;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  padding: 4px 8px;
+  font-size: 11px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.control-button:hover {
+  background: #f8f9fa;
+  border-color: #999;
+  color: #333;
+}
+
+.control-button:active {
+  background: #e9ecef;
+}
+
+.diagram-container {
+  width: 100%;
+  height: 300px;
+  background: #ffffff;
+  border: 1px solid #e1e5e9;
+  border-radius: 8px;
+  overflow: hidden;
+  position: relative;
+}
+
+.diagram-container svg {
+  width: 100%;
+  height: 100%;
+}
+
 /* Responsive adjustments */
 @media (max-width: 400px) {
   .container {
@@ -199,5 +258,19 @@ body {
   .footer {
     padding-left: 16px;
     padding-right: 16px;
+  }
+
+  .diagram-container {
+    height: 250px;
+  }
+
+  .diagram-controls {
+    flex-direction: column;
+    gap: 4px;
+  }
+
+  .control-button {
+    font-size: 10px;
+    padding: 3px 6px;
   }
 }

@@ -6,9 +6,18 @@ document.addEventListener("DOMContentLoaded", async () => {
   const noSelectionDiv = document.getElementById("no-selection");
   const hasSelectionDiv = document.getElementById("has-selection");
   const processingDiv = document.getElementById("processing");
+  const diagramViewDiv = document.getElementById("diagram-view");
   const selectedTextElement = document.getElementById("selected-text");
   const createDiagramButton = document.getElementById("create-diagram");
   const resetSelectionButton = document.getElementById("reset-selection");
+  const switchTypeButton = document.getElementById("switch-type");
+  const exportDiagramButton = document.getElementById("export-diagram");
+  const closeDiagramButton = document.getElementById("close-diagram");
+  const diagramTitleElement = document.getElementById("diagram-title");
+
+  // Initialize diagram renderer
+  let diagramRenderer = null;
+  let currentDiagramData = null;
 
   // Check for selected text when popup opens
   await checkForSelectedText();
@@ -16,6 +25,9 @@ document.addEventListener("DOMContentLoaded", async () => {
   // Set up button click handlers
   createDiagramButton.addEventListener("click", handleCreateDiagram);
   resetSelectionButton.addEventListener("click", handleResetSelection);
+  switchTypeButton.addEventListener("click", handleSwitchType);
+  exportDiagramButton.addEventListener("click", handleExportDiagram);
+  closeDiagramButton.addEventListener("click", handleCloseDiagram);
 
   async function checkForSelectedText() {
     try {
@@ -45,6 +57,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     noSelectionDiv.classList.remove("hidden");
     hasSelectionDiv.classList.add("hidden");
     processingDiv.classList.add("hidden");
+    diagramViewDiv.classList.add("hidden");
   }
 
   function showSelectedText(text) {
@@ -57,12 +70,35 @@ document.addEventListener("DOMContentLoaded", async () => {
     noSelectionDiv.classList.add("hidden");
     hasSelectionDiv.classList.remove("hidden");
     processingDiv.classList.add("hidden");
+    diagramViewDiv.classList.add("hidden");
   }
 
   function showProcessing() {
     noSelectionDiv.classList.add("hidden");
     hasSelectionDiv.classList.add("hidden");
     processingDiv.classList.remove("hidden");
+    diagramViewDiv.classList.add("hidden");
+  }
+
+  function showDiagram(diagramData) {
+    noSelectionDiv.classList.add("hidden");
+    hasSelectionDiv.classList.add("hidden");
+    processingDiv.classList.add("hidden");
+    diagramViewDiv.classList.remove("hidden");
+
+    // Initialize diagram renderer if needed
+    if (!diagramRenderer) {
+      diagramRenderer = new DiagramRenderer("diagram-container");
+    }
+
+    // Store current diagram data
+    currentDiagramData = diagramData;
+
+    // Update title
+    diagramTitleElement.textContent = diagramData.title || "Generated Diagram";
+
+    // Render the diagram
+    diagramRenderer.render(diagramData, diagramData.layout);
   }
 
   function showError(message) {
@@ -72,11 +108,8 @@ document.addEventListener("DOMContentLoaded", async () => {
   }
 
   function showDiagramResult(diagramData) {
-    // For now, show the diagram data in an alert. Later we'll render the actual diagram
-    alert(
-      `Diagram generated successfully!\n\nTitle: ${diagramData.title}\nType: ${diagramData.layout}\nNodes: ${diagramData.nodes.length}\nEdges: ${diagramData.edges.length}\n\nThis is a placeholder - the actual diagram rendering will be implemented next.`
-    );
-    showNoSelection();
+    // Show the actual diagram instead of an alert
+    showDiagram(diagramData);
   }
 
   async function handleCreateDiagram() {
@@ -167,5 +200,68 @@ document.addEventListener("DOMContentLoaded", async () => {
       // Still show no selection state even if there's an error
       showNoSelection();
     }
+  }
+
+  // Handle diagram type switching
+  function handleSwitchType() {
+    if (!currentDiagramData || !diagramRenderer) return;
+
+    const currentType = diagramRenderer.currentType;
+    let newType;
+
+    // Cycle through available types
+    switch (currentType) {
+      case "flowchart":
+        newType = "mindmap";
+        break;
+      case "mindmap":
+        newType = "timeline";
+        break;
+      case "timeline":
+        newType = "compare";
+        break;
+      case "compare":
+        newType = "flowchart";
+        break;
+      default:
+        newType = "flowchart";
+    }
+
+    diagramRenderer.switchType(newType);
+    console.log(`Switched to ${newType} view`);
+  }
+
+  // Handle diagram export
+  async function handleExportDiagram() {
+    if (!diagramRenderer) return;
+
+    try {
+      // Export as PNG
+      const blob = await diagramRenderer.exportPNG();
+      const url = URL.createObjectURL(blob);
+
+      // Create download link
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `seequence-diagram-${Date.now()}.png`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+
+      URL.revokeObjectURL(url);
+      console.log("Diagram exported as PNG");
+    } catch (error) {
+      console.error("Export failed:", error);
+      alert("Export failed. Please try again.");
+    }
+  }
+
+  // Handle diagram close
+  function handleCloseDiagram() {
+    showNoSelection();
+    if (diagramRenderer) {
+      diagramRenderer.clear();
+    }
+    currentDiagramData = null;
   }
 });
