@@ -14,7 +14,7 @@
 
   "web_accessible_resources": [
     {
-      "resources": ["ai/ai-processor.js"],
+      "resources": ["ai/ai-processor.js", "ai/ai-processor-fallback.js"],
       "matches": ["<all_urls>"]
     }
   ],
