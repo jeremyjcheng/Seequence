@@ -277,6 +277,26 @@ class AIProcessorFallback {
     return typeMapping[contentType] || "flowchart";
   }
 
+  // Simple fallback summarizer (basic truncation)
+  async generateSummary(text) {
+    console.log("Using basic fallback summarizer");
+
+    // Simple truncation fallback
+    if (text.length <= 120) {
+      return text;
+    }
+
+    // Truncate at word boundary
+    const words = text.split(" ");
+    let truncated = "";
+    for (const word of words) {
+      if (truncated.length + word.length + 1 > 120) break;
+      truncated += (truncated ? " " : "") + word;
+    }
+
+    return truncated + "...";
+  }
+
   // Get session status
   getStatus() {
     return {
@@ -353,6 +373,9 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     case "checkAIAvailability":
       handleAICheck(sendResponse);
       return true;
+    case "generateSummary":
+      handleGenerateSummary(request, sendResponse);
+      return true;
     case "saveDiagram":
       handleSaveDiagram(request, sendResponse);
       break;
@@ -418,6 +441,102 @@ async function handleAICheck(sendResponse) {
       error: error.message,
     });
   }
+}
+
+// Handle summary generation
+async function handleGenerateSummary(request, sendResponse) {
+  try {
+    const { text } = request;
+
+    // Try Python summarizer first
+    try {
+      const summary = await callPythonSummarizer(text);
+      sendResponse({
+        success: true,
+        summary: summary,
+      });
+      return;
+    } catch (pythonError) {
+      console.log(
+        "Python summarizer not available, falling back to JS version"
+      );
+    }
+
+    // Fallback to JavaScript summarizer
+    if (!aiProcessor) {
+      await initializeAI();
+    }
+
+    if (!aiProcessor || !aiProcessor.isAvailable) {
+      sendResponse({
+        success: false,
+        error: "No summarizer available",
+      });
+      return;
+    }
+
+    const summary = await aiProcessor.generateSummary(text);
+    sendResponse({
+      success: true,
+      summary: summary,
+    });
+  } catch (error) {
+    console.error("Error generating summary:", error);
+    sendResponse({
+      success: false,
+      error: error.message,
+    });
+  }
+}
+
+// Call Python summarizer
+async function callPythonSummarizer(text) {
+  return new Promise((resolve, reject) => {
+    const { spawn } = require("child_process");
+    const path = require("path");
+
+    // Path to the Python summarizer
+    const summarizerPath = path.join(__dirname, "../summarizer/summarizer.py");
+
+    // Spawn Python process from virtual environment
+    const venvPython = path.join(__dirname, "../summarizer/venv/bin/python");
+    const python = spawn(venvPython, [summarizerPath, "--json"], {
+      stdio: ["pipe", "pipe", "pipe"],
+    });
+
+    let output = "";
+    let errorOutput = "";
+
+    // Send text to Python process
+    python.stdin.write(text);
+    python.stdin.end();
+
+    // Collect output
+    python.stdout.on("data", (data) => {
+      output += data.toString();
+    });
+
+    python.stderr.on("data", (data) => {
+      errorOutput += data.toString();
+    });
+
+    python.on("close", (code) => {
+      if (code === 0) {
+        try {
+          const result = JSON.parse(output);
+          resolve(result.summary);
+        } catch (parseError) {
+          reject(new Error("Failed to parse Python summarizer output"));
+        }
+      } else {
+        reject(new Error(`Python summarizer failed: ${errorOutput}`));
+      }
+    });
+
+    python.on("error", (error) => {
+      reject(new Error(`Failed to start Python summarizer: ${error.message}`));
+    });
+  });
 }
 
 // Handle diagram saving

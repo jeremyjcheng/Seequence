@@ -1,0 +1,7 @@
+# Core NLP libraries
+nltk>=3.8
+spacy>=3.4.0
+
+# Optional: For even better summarization
+# transformers>=4.20.0
+# torch>=1.12.0

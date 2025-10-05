@@ -73,12 +73,29 @@ document.addEventListener("DOMContentLoaded", async () => {
     diagramViewDiv.classList.add("hidden");
   }
 
-  function showSelectedText(text) {
-    // Truncate text for preview (show first 200 characters)
-    const previewText =
-      text.length > 200 ? text.substring(0, 200) + "..." : text;
+  async function showSelectedText(text) {
+    // Generate a summary instead of just truncating
+    try {
+      const summaryResponse = await chrome.runtime.sendMessage({
+        action: "generateSummary",
+        text: text,
+      });
 
-    selectedTextElement.textContent = previewText;
+      if (summaryResponse.success) {
+        selectedTextElement.textContent = summaryResponse.summary;
+      } else {
+        // Fallback to truncation if summary fails
+        const previewText =
+          text.length > 200 ? text.substring(0, 200) + "..." : text;
+        selectedTextElement.textContent = previewText;
+      }
+    } catch (error) {
+      console.error("Error generating summary:", error);
+      // Fallback to truncation
+      const previewText =
+        text.length > 200 ? text.substring(0, 200) + "..." : text;
+      selectedTextElement.textContent = previewText;
+    }
 
     noSelectionDiv.classList.add("hidden");
     hasSelectionDiv.classList.remove("hidden");
