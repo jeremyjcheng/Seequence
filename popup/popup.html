@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Seequence</title>
+    <link rel="stylesheet" href="popup.css" />
+  </head>
+  <body>
+    <div class="container">
+      <header class="header">
+        <h1>Seequence</h1>
+        <p class="subtitle">Transform text into visual diagrams</p>
+      </header>
+
+      <main class="main">
+        <div id="no-selection" class="state-message">
+          <div class="icon">📝</div>
+          <h3>Select text to begin</h3>
+          <p>
+            Highlight any text on the page, then click the Seequence icon to
+            transform it into a visual diagram.
+          </p>
+        </div>
+
+        <div id="has-selection" class="state-message hidden">
+          <div class="icon">✨</div>
+          <h3>Text selected!</h3>
+          <div class="selected-text-preview">
+            <p id="selected-text"></p>
+          </div>
+          <div class="button-group">
+            <button id="create-diagram" class="primary-button">
+              Create Diagram
+            </button>
+            <button id="reset-selection" class="secondary-button">Reset</button>
+          </div>
+        </div>
+
+        <div id="processing" class="state-message hidden">
+          <div class="icon">🔄</div>
+          <h3>Processing...</h3>
+          <p>Analyzing text structure and generating diagram...</p>
+          <div class="loading-spinner"></div>
+        </div>
+      </main>
+
+      <footer class="footer">
+        <p class="privacy-note">
+          🔒 All processing happens locally on your device
+        </p>
+      </footer>
+    </div>
+
+    <script src="popup.js"></script>
+  </body>
+</html>

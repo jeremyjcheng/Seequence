@@ -1,0 +1,27 @@
+{
+  "manifest_version": 3,
+  "name": "Seequence",
+  "version": "1.0.0",
+  "description": "Transform text into interactive visual diagrams using local AI",
+
+  "permissions": ["activeTab", "storage"],
+
+  "host_permissions": ["<all_urls>"],
+
+  "background": {
+    "service_worker": "background/background.js"
+  },
+
+  "content_scripts": [
+    {
+      "matches": ["<all_urls>"],
+      "js": ["content/content.js"],
+      "run_at": "document_end"
+    }
+  ],
+
+  "action": {
+    "default_popup": "popup/popup.html",
+    "default_title": "Seequence - Transform text to diagrams"
+  }
+}
