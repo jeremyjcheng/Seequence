@@ -79,9 +79,10 @@ document.addEventListener("DOMContentLoaded", async () => {
       console.error("Popup: selectedTextElement not found!");
       return;
     }
-    
+
     // Show original text (truncated for preview)
-    const previewText = text.length > 200 ? text.substring(0, 200) + "..." : text;
+    const previewText =
+      text.length > 200 ? text.substring(0, 200) + "..." : text;
     selectedTextElement.textContent = previewText;
     selectedTextElement.style.color = "#333";
     selectedTextElement.style.fontStyle = "italic";
@@ -99,7 +100,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     diagramViewDiv.classList.add("hidden");
   }
 
-  function showDiagram(diagramData) {
+  async function showDiagram(diagramData) {
     noSelectionDiv.classList.add("hidden");
     hasSelectionDiv.classList.add("hidden");
     processingDiv.classList.add("hidden");
@@ -132,19 +133,25 @@ document.addEventListener("DOMContentLoaded", async () => {
       console.log("Popup: Generating summary for diagram title");
       const summaryResponse = await chrome.runtime.sendMessage({
         action: "generateSummary",
-        text: diagramData.originalText || diagramData.title || "Generated Diagram",
+        text:
+          diagramData.originalText || diagramData.title || "Generated Diagram",
       });
 
       if (summaryResponse.success) {
-        console.log("Popup: Using generated summary for diagram title:", summaryResponse.summary);
+        console.log(
+          "Popup: Using generated summary for diagram title:",
+          summaryResponse.summary
+        );
         diagramTitleElement.textContent = summaryResponse.summary;
       } else {
         console.log("Popup: Summary failed, using original title");
-        diagramTitleElement.textContent = diagramData.title || "Generated Diagram";
+        diagramTitleElement.textContent =
+          diagramData.title || "Generated Diagram";
       }
     } catch (error) {
       console.error("Popup: Error generating summary for diagram:", error);
-      diagramTitleElement.textContent = diagramData.title || "Generated Diagram";
+      diagramTitleElement.textContent =
+        diagramData.title || "Generated Diagram";
     }
 
     // Render the diagram
