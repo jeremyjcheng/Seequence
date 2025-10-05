@@ -2,6 +2,13 @@
 // Handles UI interactions and communication with content script
 
 document.addEventListener("DOMContentLoaded", async () => {
+  // Check if D3 loaded successfully
+  if (typeof d3 === "undefined") {
+    console.error("D3.js failed to load");
+  } else {
+    console.log("D3.js loaded successfully");
+  }
+
   // Get references to UI elements
   const noSelectionDiv = document.getElementById("no-selection");
   const hasSelectionDiv = document.getElementById("has-selection");
@@ -37,14 +44,20 @@ document.addEventListener("DOMContentLoaded", async () => {
         currentWindow: true,
       });
 
-      // Send message to content script to get selected text
-      const response = await chrome.tabs.sendMessage(tab.id, {
-        action: "getSelectedText",
-      });
+      // Check if content script is available
+      try {
+        // Send message to content script to get selected text
+        const response = await chrome.tabs.sendMessage(tab.id, {
+          action: "getSelectedText",
+        });
 
-      if (response && response.selectedText && response.selectedText.trim()) {
-        showSelectedText(response.selectedText);
-      } else {
+        if (response && response.selectedText && response.selectedText.trim()) {
+          showSelectedText(response.selectedText);
+        } else {
+          showNoSelection();
+        }
+      } catch (contentScriptError) {
+        console.log("Content script not available, showing no selection state");
         showNoSelection();
       }
     } catch (error) {
@@ -142,9 +155,17 @@ document.addEventListener("DOMContentLoaded", async () => {
       });
 
       // Send message to content script to get the full selected text
-      const response = await chrome.tabs.sendMessage(tab.id, {
-        action: "getSelectedText",
-      });
+      let response;
+      try {
+        response = await chrome.tabs.sendMessage(tab.id, {
+          action: "getSelectedText",
+        });
+      } catch (contentScriptError) {
+        showError(
+          "Content script not available. Please refresh the page and try again."
+        );
+        return;
+      }
 
       if (response && response.selectedText) {
         console.log("Selected text length:", response.selectedText.length);
