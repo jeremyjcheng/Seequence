@@ -65,6 +65,20 @@ document.addEventListener("DOMContentLoaded", async () => {
     processingDiv.classList.remove("hidden");
   }
 
+  function showError(message) {
+    // For now, show error in an alert. Later we'll add a proper error state
+    alert(`Error: ${message}`);
+    showNoSelection();
+  }
+
+  function showDiagramResult(diagramData) {
+    // For now, show the diagram data in an alert. Later we'll render the actual diagram
+    alert(
+      `Diagram generated successfully!\n\nTitle: ${diagramData.title}\nType: ${diagramData.layout}\nNodes: ${diagramData.nodes.length}\nEdges: ${diagramData.edges.length}\n\nThis is a placeholder - the actual diagram rendering will be implemented next.`
+    );
+    showNoSelection();
+  }
+
   async function handleCreateDiagram() {
     try {
       showProcessing();
@@ -81,19 +95,35 @@ document.addEventListener("DOMContentLoaded", async () => {
       });
 
       if (response && response.selectedText) {
-        // For now, just show an alert. Later this will process with AI and create diagrams
-        setTimeout(() => {
-          alert(
-            `Selected text (${
-              response.selectedText.length
-            } characters):\n\n${response.selectedText.substring(0, 100)}...`
+        // Check AI availability first
+        const aiStatus = await chrome.runtime.sendMessage({
+          action: "checkAIAvailability",
+        });
+
+        if (!aiStatus.success || !aiStatus.status.available) {
+          showError(
+            "AI processing not available. Please ensure Chrome flags are enabled and you have the required hardware."
           );
-          showSelectedText(response.selectedText);
-        }, 2000);
+          return;
+        }
+
+        // Process text with AI
+        const processResponse = await chrome.runtime.sendMessage({
+          action: "processText",
+          text: response.selectedText,
+          diagramType: "auto",
+        });
+
+        if (processResponse.success) {
+          // Show the generated diagram data (for now, just display it)
+          showDiagramResult(processResponse.data);
+        } else {
+          showError(`AI processing failed: ${processResponse.error}`);
+        }
       }
     } catch (error) {
       console.error("Error creating diagram:", error);
-      showNoSelection();
+      showError("An error occurred while processing the text.");
     }
   }
 
