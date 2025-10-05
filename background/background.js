@@ -11,8 +11,8 @@ class AIProcessor {
   // Check if AI API is available
   async checkAvailability() {
     try {
-      if (window.ai && window.ai.languageModel) {
-        const capabilities = await window.ai.languageModel.capabilities();
+      if (self.ai && self.ai.languageModel) {
+        const capabilities = await self.ai.languageModel.capabilities();
         this.isAvailable = capabilities.available !== "no";
         console.log("AI API available:", this.isAvailable);
         return this.isAvailable;
@@ -32,7 +32,7 @@ class AIProcessor {
 
     if (this.isAvailable && !this.session) {
       try {
-        this.session = await window.ai.languageModel.create({
+        this.session = await self.ai.languageModel.create({
           temperature: 0.7,
           topK: 40,
         });
@@ -139,8 +139,8 @@ class AIProcessorFallback {
   // Check if AI API is available
   async checkAvailability() {
     try {
-      if (window.ai && window.ai.languageModel) {
-        const capabilities = await window.ai.languageModel.capabilities();
+      if (self.ai && self.ai.languageModel) {
+        const capabilities = await self.ai.languageModel.capabilities();
         this.isAvailable = capabilities.available !== "no";
         console.log("Real AI API available:", this.isAvailable);
         return this.isAvailable;
