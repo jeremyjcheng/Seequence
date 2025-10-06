@@ -19,7 +19,6 @@ document.addEventListener("DOMContentLoaded", async () => {
   const resetSelectionButton = document.getElementById("reset-selection");
   const switchTypeButton = document.getElementById("switch-type");
   const exportDiagramButton = document.getElementById("export-diagram");
-  const closeDiagramButton = document.getElementById("close-diagram");
   const layoutSelect = document.getElementById("layout-select");
   const diagramTitleElement = document.getElementById("diagram-title");
   const summaryLengthContainer = document.getElementById("summary-length");
