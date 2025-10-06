@@ -588,12 +588,30 @@ async function handleAICheck(sendResponse) {
     const hasChromeAI = !!(self.ai && self.ai.summarizer);
     console.log("Background: Chrome AI available:", hasChromeAI);
 
+    // Test Chrome AI if available
+    let chromeAITest = false;
     if (hasChromeAI) {
+      try {
+        console.log("Background: Testing Chrome AI...");
+        const testSummary = await summarizeWithChromeAI(
+          "This is a test sentence for Chrome AI.",
+          "short"
+        );
+        chromeAITest = true;
+        console.log("Background: Chrome AI test successful:", testSummary);
+      } catch (testError) {
+        console.log("Background: Chrome AI test failed:", testError.message);
+        chromeAITest = false;
+      }
+    }
+
+    if (hasChromeAI && chromeAITest) {
       sendResponse({
         success: true,
         status: {
           available: true,
           chrome_ai: true,
+          chrome_ai_working: true,
           sessionActive: true,
           fallback: false,
         },
