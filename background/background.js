@@ -659,33 +659,13 @@ async function handleGenerateSummary(request, sendResponse) {
       }
     }
 
-    // Fallback - basic truncation with length awareness
-    console.log("Background: Using basic truncation fallback...");
-    let basicSummary;
-    if (length === "short") {
-      // Try to get first sentence or truncate at 60 chars
-      const firstSentence = text.split(/[.!?]/)[0];
-      basicSummary =
-        firstSentence.length > 60
-          ? firstSentence.substring(0, 60) + "..."
-          : firstSentence;
-    } else if (length === "medium") {
-      // Try to get first two sentences or truncate at 140 chars
-      const sentences = text.split(/[.!?]/).slice(0, 2);
-      const twoSentences =
-        sentences.join(". ") + (sentences.length > 1 ? "." : "");
-      basicSummary =
-        twoSentences.length > 140
-          ? twoSentences.substring(0, 140) + "..."
-          : twoSentences;
-    } else {
-      // Long - truncate at 200 chars
-      basicSummary = text.length > 200 ? text.substring(0, 200) + "..." : text;
-    }
+    // Fallback - smart summarization without external dependencies
+    console.log("Background: Using smart fallback summarization...");
+    const summary = await smartSummarize(text, length);
 
     sendResponse({
       success: true,
-      summary: basicSummary,
+      summary: summary,
       used_chrome_ai: false,
       fallback: true,
     });
@@ -722,6 +702,93 @@ async function summarizeWithChromeAI(text, length) {
   } catch (error) {
     console.error("Chrome AI summarization error:", error);
     throw error;
+  }
+}
+
+// Smart summarization without external dependencies
+async function smartSummarize(text, length) {
+  // Extract sentences
+  const sentences = text.split(/[.!?]+/).filter((s) => s.trim().length > 10);
+
+  if (sentences.length === 0) {
+    return text.length > 100 ? text.substring(0, 100) + "..." : text;
+  }
+
+  // Score sentences by importance (simple heuristic)
+  const scoredSentences = sentences.map((sentence, index) => {
+    let score = 0;
+    const words = sentence.toLowerCase().split(/\s+/);
+
+    // Position bonus (first sentences are usually important)
+    if (index === 0) score += 10;
+    else if (index < 3) score += 5;
+
+    // Length bonus (not too short, not too long)
+    if (words.length >= 8 && words.length <= 25) score += 3;
+
+    // Keyword bonus (important words)
+    const importantWords = [
+      "key",
+      "main",
+      "important",
+      "primary",
+      "essential",
+      "critical",
+      "significant",
+      "major",
+    ];
+    importantWords.forEach((word) => {
+      if (sentence.toLowerCase().includes(word)) score += 2;
+    });
+
+    // Proper noun bonus (names, places, etc.)
+    const properNouns = sentence.match(/\b[A-Z][a-z]+\b/g) || [];
+    score += properNouns.length;
+
+    return { sentence: sentence.trim(), score, index };
+  });
+
+  // Sort by score and select based on length
+  scoredSentences.sort((a, b) => b.score - a.score);
+
+  if (length === "short") {
+    // Headline style - get the most important sentence, make it punchy
+    const best = scoredSentences[0];
+    let summary = best.sentence;
+
+    // Make it more headline-like
+    if (summary.length > 60) {
+      summary = summary.substring(0, 60).trim();
+      // Try to end at a word boundary
+      const lastSpace = summary.lastIndexOf(" ");
+      if (lastSpace > 40) summary = summary.substring(0, lastSpace);
+    }
+
+    return summary;
+  } else if (length === "medium") {
+    // One good sentence
+    const best = scoredSentences[0];
+    let summary = best.sentence;
+
+    if (summary.length > 140) {
+      summary = summary.substring(0, 140).trim();
+      const lastSpace = summary.lastIndexOf(" ");
+      if (lastSpace > 100) summary = summary.substring(0, lastSpace);
+    }
+
+    return summary;
+  } else {
+    // Long - two good sentences
+    const best = scoredSentences.slice(0, 2);
+    let summary = best.map((s) => s.sentence).join(". ");
+
+    if (summary.length > 200) {
+      summary = summary.substring(0, 200).trim();
+      const lastSpace = summary.lastIndexOf(" ");
+      if (lastSpace > 150) summary = summary.substring(0, lastSpace);
+    }
+
+    return summary + (summary.endsWith(".") ? "" : ".");
   }
 }
 
