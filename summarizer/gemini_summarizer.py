@@ -67,8 +67,13 @@ class GeminiSummarizer:
         
         return None
     
-    def generate_summary(self, text: str, max_length: int = 120) -> str:
-        """Generate a reader-friendly summary using Gemini API with fallback"""
+    def generate_summary(self, text: str, max_length: int = 120, length_label: str | None = None) -> str:
+        """Generate a reader-friendly summary using Gemini API with fallback.
+        length_label controls style rather than just truncation:
+          - short: headline-style (8–12 words), punchy, no ellipsis
+          - medium: one sentence (18–28 words)
+          - long: two sentences (35–60 words), include an extra concrete detail
+        """
         
         print(f"🔍 GeminiSummarizer.generate_summary called with text length: {len(text)}")
         print(f"🔍 Gemini available: {self.gemini_available}")
@@ -78,17 +83,29 @@ class GeminiSummarizer:
         if self.gemini_available:
             try:
                 print("🤖 Attempting Gemini API call...")
-                # Create a prompt for natural summarization
-                prompt = f"""Please create a concise, reader-friendly summary of the following text. The summary should be:
-- Natural and easy to read
-- Capture the main point or essence
-- Be no more than {max_length} characters
-- Sound like something a human would write
+                # Style instructions based on length_label
+                mode = (length_label or "medium").lower()
+                if mode == "short":
+                    style = (
+                        "Write a headline-style summary (8–12 words). "
+                        "Punchy, noun phrase if possible. No ellipsis."
+                    )
+                elif mode == "long":
+                    style = (
+                        "Write two concise sentences (35–60 words total). "
+                        "Include one concrete detail beyond a headline. No ellipsis."
+                    )
+                else:  # medium
+                    style = (
+                        "Write one complete sentence (18–28 words). "
+                        "Cover the main point and context. No ellipsis."
+                    )
 
-Text to summarize:
-{text}
-
-Summary:"""
+                prompt = (
+                    f"You are a helpful summarizer. {style}\n"
+                    f"Keep within {max_length} characters if possible.\n\n"
+                    f"Text to summarize:\n{text}\n\nSummary:"
+                )
 
                 print(f"Prompt length: {len(prompt)}")
                 response = self.model.generate_content(prompt)

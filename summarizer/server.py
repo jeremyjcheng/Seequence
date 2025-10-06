@@ -60,8 +60,15 @@ class SummarizerHandler(BaseHTTPRequestHandler):
                     self.send_error_response(400, "No text provided")
                     return
                 
-                # Generate summary
-                summary = self.summarizer.generate_summary(text, max_length)
+                # Optional style label for different modes (short/medium/long)
+                try:
+                    req_json = json.loads(post_data.decode('utf-8'))
+                    length_label = req_json.get('length_label') if isinstance(req_json, dict) else None
+                except Exception:
+                    length_label = None
+
+                # Generate summary (style-aware)
+                summary = self.summarizer.generate_summary(text, max_length, length_label)
                 
                 # Send response
                 self.send_response(200)
