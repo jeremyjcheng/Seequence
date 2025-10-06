@@ -2,7 +2,13 @@
 // Handles extension lifecycle and coordinates between components
 
 // Import built-in AI components
-importScripts("builtin-ai-processor.js");
+try {
+  importScripts("builtin-ai-processor.js");
+  console.log("Built-in AI processor loaded successfully");
+} catch (error) {
+  console.error("Failed to load built-in AI processor:", error);
+  // Continue without built-in AI processor - will use fallback methods
+}
 
 // AI Processor classes (included directly to avoid import() issues in service workers)
 class AIProcessor {

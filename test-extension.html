@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Seequence Extension Test</title>
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+        max-width: 800px;
+        margin: 0 auto;
+        padding: 20px;
+        line-height: 1.6;
+      }
+      .test-section {
+        margin: 20px 0;
+        padding: 15px;
+        border: 1px solid #ddd;
+        border-radius: 5px;
+      }
+      .highlight {
+        background-color: #ffffcc;
+        padding: 2px 4px;
+      }
+      button {
+        background-color: #4caf50;
+        color: white;
+        padding: 10px 20px;
+        border: none;
+        border-radius: 4px;
+        cursor: pointer;
+        margin: 5px;
+      }
+      button:hover {
+        background-color: #45a049;
+      }
+      #status {
+        margin-top: 20px;
+        padding: 10px;
+        border-radius: 4px;
+      }
+      .success {
+        background-color: #d4edda;
+        color: #155724;
+      }
+      .error {
+        background-color: #f8d7da;
+        color: #721c24;
+      }
+      .warning {
+        background-color: #fff3cd;
+        color: #856404;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>Seequence Extension Test Page</h1>
+
+    <div class="test-section">
+      <h2>Test Instructions</h2>
+      <ol>
+        <li>Make sure the Seequence extension is loaded in Chrome</li>
+        <li>Select some text below (highlight it with your mouse)</li>
+        <li>Click the Seequence extension icon in the toolbar</li>
+        <li>Click "Create Diagram" in the popup</li>
+        <li>Check the console for any error messages</li>
+      </ol>
+    </div>
+
+    <div class="test-section">
+      <h2>Test Content - Select This Text</h2>
+      <p>
+        <span class="highlight"
+          >Select this paragraph to test the extension.</span
+        >
+        This is a sample text that contains multiple sentences. The extension
+        should be able to process this text and generate a diagram. Try
+        selecting different amounts of text to see how the extension responds.
+      </p>
+
+      <p>
+        Here's another paragraph with more complex content. It includes various
+        elements like <strong>bold text</strong> and <em>italic text</em>. The
+        extension should handle this content appropriately.
+      </p>
+    </div>
+
+    <div class="test-section">
+      <h2>Debug Information</h2>
+      <button onclick="checkChromeVersion()">Check Chrome Version</button>
+      <button onclick="checkNavigatorAI()">Check navigator.ai</button>
+      <button onclick="testExtensionCommunication()">
+        Test Extension Communication
+      </button>
+      <button onclick="clearStatus()">Clear Status</button>
+
+      <div id="status"></div>
+    </div>
+
+    <div class="test-section">
+      <h2>Sample Text for Testing</h2>
+      <p>
+        <strong>Process Flow:</strong> First, the user selects text on a
+        webpage. Then, the extension captures the selected text and sends it to
+        the AI processor. The AI processor analyzes the text structure and
+        generates diagram data. Finally, the diagram is rendered using D3.js
+        visualization.
+      </p>
+
+      <p>
+        <strong>AI Processing Steps:</strong>
+        1. Text analysis and structure detection 2. Key point extraction 3.
+        Relationship identification 4. Diagram type selection 5. Visual
+        representation generation
+      </p>
+    </div>
+
+    <script>
+      function log(message, type = "info") {
+        const status = document.getElementById("status");
+        const div = document.createElement("div");
+        div.className = type;
+        div.textContent = message;
+        status.appendChild(div);
+        console.log(`[${type.toUpperCase()}] ${message}`);
+      }
+
+      function clearStatus() {
+        document.getElementById("status").innerHTML = "";
+      }
+
+      function checkChromeVersion() {
+        const userAgent = navigator.userAgent;
+        const chromeMatch = userAgent.match(/Chrome\/(\d+)/);
+        const version = chromeMatch ? parseInt(chromeMatch[1]) : 0;
+
+        if (version >= 138) {
+          log(
+            `✅ Chrome version ${version} - Built-in AI APIs should be available`,
+            "success"
+          );
+        } else {
+          log(
+            `⚠️ Chrome version ${version} - Built-in AI APIs require Chrome 138+`,
+            "warning"
+          );
+        }
+      }
+
+      function checkNavigatorAI() {
+        if ("ai" in navigator) {
+          log("✅ navigator.ai is available", "success");
+          log(
+            `Available APIs: ${Object.keys(navigator.ai).join(", ")}`,
+            "info"
+          );
+        } else {
+          log(
+            "❌ navigator.ai is not available - Chrome built-in AI APIs not supported",
+            "error"
+          );
+          log(
+            "Enable these flags: chrome://flags/#optimization-guide-on-device-model",
+            "warning"
+          );
+        }
+      }
+
+      function testExtensionCommunication() {
+        if (typeof chrome !== "undefined" && chrome.runtime) {
+          chrome.runtime.sendMessage(
+            {
+              action: "checkAIAvailability",
+            },
+            (response) => {
+              if (chrome.runtime.lastError) {
+                log(
+                  `❌ Extension communication failed: ${chrome.runtime.lastError.message}`,
+                  "error"
+                );
+              } else if (response && response.success) {
+                log("✅ Extension communication successful", "success");
+                log(`AI Available: ${response.status.available}`, "info");
+                if (response.status.builtInAI) {
+                  log(
+                    `Built-in AI: ${JSON.stringify(response.status.builtInAI)}`,
+                    "info"
+                  );
+                }
+              } else {
+                log(
+                  `❌ AI check failed: ${
+                    response ? response.error : "No response"
+                  }`,
+                  "error"
+                );
+              }
+            }
+          );
+        } else {
+          log("❌ Chrome extension APIs not available", "error");
+        }
+      }
+
+      // Auto-run checks on page load
+      window.addEventListener("load", () => {
+        log("Page loaded - running initial checks...", "info");
+        checkChromeVersion();
+        checkNavigatorAI();
+      });
+    </script>
+  </body>
+</html>
