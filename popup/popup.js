@@ -337,9 +337,17 @@ document.addEventListener("DOMContentLoaded", async () => {
         action: "clearSelection",
       });
 
-      // Clear any browser selection
-      chrome.tabs.executeScript(tab.id, {
-        code: "window.getSelection().removeAllRanges();",
+      // Clear any browser selection (MV3)
+      await chrome.scripting.executeScript({
+        target: { tabId: tab.id },
+        func: () => {
+          try {
+            const sel = window.getSelection();
+            if (sel && sel.removeAllRanges) sel.removeAllRanges();
+          } catch (e) {
+            console.error("Failed clearing selection in tab:", e);
+          }
+        },
       });
 
       // Show no selection state
