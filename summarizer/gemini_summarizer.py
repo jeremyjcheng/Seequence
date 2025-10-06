@@ -75,14 +75,13 @@ class GeminiSummarizer:
           - long: two sentences (35–60 words), include an extra concrete detail
         """
         
-        print(f"🔍 GeminiSummarizer.generate_summary called with text length: {len(text)}")
-        print(f"🔍 Gemini available: {self.gemini_available}")
-        print(f"🔍 Max length: {max_length}")
-        print(f"🔍 Text preview: {text[:100]}...")
+        print(f"[Gemini] generate_summary: text_len={len(text)} max_length={max_length} length_label={length_label}")
+        print(f"[Gemini] available={self.gemini_available}")
+        print(f"[Gemini] text_preview='{text[:100]}'")
         
         if self.gemini_available:
             try:
-                print("🤖 Attempting Gemini API call...")
+                print("[Gemini] Attempting API call...")
                 # Style instructions based on length_label
                 mode = (length_label or "medium").lower()
                 if mode == "short":
@@ -100,6 +99,7 @@ class GeminiSummarizer:
                         "Write one complete sentence (18–28 words). "
                         "Cover the main point and context. No ellipsis."
                     )
+                print(f"[Gemini] mode={mode} style_hint_set")
 
                 prompt = (
                     f"You are a helpful summarizer. {style}\n"
@@ -107,35 +107,35 @@ class GeminiSummarizer:
                     f"Text to summarize:\n{text}\n\nSummary:"
                 )
 
-                print(f"Prompt length: {len(prompt)}")
+                print(f"[Gemini] prompt_len={len(prompt)}")
                 response = self.model.generate_content(prompt)
-                print(f"Gemini response received: {type(response)}")
+                print(f"[Gemini] response_type={type(response)}")
                 
                 if response and response.text:
                     summary = response.text.strip()
-                    print(f"Raw Gemini response: {summary}")
+                    print(f"[Gemini] raw_response_len={len(summary)} preview='{summary[:80]}'")
                     
                     # Ensure it's within the length limit
                     if len(summary) > max_length:
                         summary = summary[:max_length-3] + "..."
-                        print(f"Summary truncated to {max_length} chars")
+                        print(f"[Gemini] truncated_to={max_length}")
                     
-                    print(f"Generated Gemini summary: {summary}")
+                    print(f"[Gemini] final_summary_len={len(summary)} preview='{summary[:80]}'")
                     return summary
                 else:
-                    print("Gemini API returned empty response, using fallback")
+                    print("[Gemini] Empty API response, using fallback")
                     
             except Exception as e:
-                print(f"Gemini API error: {e}")
-                print(f"Error type: {type(e)}")
-                print("Using fallback summarizer due to Gemini error")
+                print(f"[Gemini] API error: {e}")
+                print(f"[Gemini] error_type={type(e)}")
+                print("[Gemini] Using fallback summarizer due to API error")
         else:
-            print("Gemini not available, using fallback summarizer")
+            print("[Gemini] Not available, using fallback summarizer")
         
         # Fallback to base summarizer
-        print("Using fallback summarizer")
+        print(f"[Fallback] Generating base summary. max_length={max_length}")
         fallback_summary = self.base_summarizer.generate_summary(text, max_length=max_length)
-        print(f"Fallback summary: {fallback_summary}")
+        print(f"[Fallback] summary_len={len(fallback_summary)} preview='{fallback_summary[:80]}'")
         return fallback_summary
 
     def analyze_content_structure(self, text: str) -> dict:

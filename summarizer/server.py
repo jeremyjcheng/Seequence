@@ -55,6 +55,11 @@ class SummarizerHandler(BaseHTTPRequestHandler):
                 data = json.loads(post_data.decode('utf-8'))
                 text = data.get('text', '')
                 max_length = data.get('max_length', 120)
+                # Diagnostics
+                try:
+                    print(f"[Server] /summarize received. text_len={len(text)} max_length={max_length}")
+                except Exception:
+                    pass
                 
                 if not text:
                     self.send_error_response(400, "No text provided")
@@ -66,9 +71,12 @@ class SummarizerHandler(BaseHTTPRequestHandler):
                     length_label = req_json.get('length_label') if isinstance(req_json, dict) else None
                 except Exception:
                     length_label = None
+                print(f"[Server] length_label={length_label}")
 
                 # Generate summary (style-aware)
+                print(f"[Server] Gemini available? {self.summarizer.get_status().get('gemini_available')} -> calling generate_summary")
                 summary = self.summarizer.generate_summary(text, max_length, length_label)
+                print(f"[Server] Summary generated. len={len(summary)} preview='{summary[:80]}'")
                 
                 # Send response
                 self.send_response(200)

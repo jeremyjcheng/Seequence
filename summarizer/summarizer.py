@@ -163,8 +163,11 @@ class TextSummarizer:
         
         return sentence_scores
 
-    def generate_summary(self, text: str, max_length: int = 120) -> str:
-        """Generate a concise summary of the text"""
+    def generate_summary(self, text: str, max_length: int = 120, length_label: str | None = None) -> str:
+        """Generate a concise summary of the text.
+        When length_label is provided (short|medium|long), adjust style accordingly so
+        different tiers are meaningfully distinct even without Gemini.
+        """
         if not text or len(text.strip()) < 20:
             return text[:max_length] + "..." if len(text) > max_length else text
         
@@ -189,28 +192,64 @@ class TextSummarizer:
                 return truncated + "..."
             return summary
         
-        # Extract keywords
+        # Extract keywords and score sentences
         word_freq = self.extract_keywords(text)
-        
-        # Score sentences
         sentence_scores = self.score_sentences(sentences, word_freq)
-        
-        # Sort by score and get the best sentence
         sentence_scores.sort(key=lambda x: x[1], reverse=True)
-        best_sentence = sentence_scores[0][0]
-        
-        # Clean up and truncate if necessary
-        summary = best_sentence.strip()
-        if len(summary) > max_length:
-            words = summary.split()
+
+        mode = (length_label or "medium").lower()
+
+        # Helper: truncate by words to character cap
+        def truncate_to_chars(s: str, cap: int) -> str:
+            if len(s) <= cap:
+                return s
+            words = s.split()
             truncated = ""
             for word in words:
-                if len(truncated) + len(word) + 1 > max_length:
+                if len(truncated) + (1 if truncated else 0) + len(word) > cap:
                     break
                 truncated += (" " if truncated else "") + word
-            summary = truncated + "..."
-        
-        return summary
+            return truncated + "..."
+
+        if mode == "short":
+            # Headline-style: build from top keywords and proper nouns
+            # 1) Take top 6 keyword stems by frequency
+            top_keywords = sorted(word_freq.items(), key=lambda kv: kv[1], reverse=True)
+            top_keywords = [kw for kw, _ in top_keywords[:8]]
+
+            # 2) Collect proper nouns from top-scoring sentences
+            import re
+            proper_nouns: list[str] = []
+            for sentence, _ in sentence_scores[:3]:
+                proper_nouns += re.findall(r"\b[A-Z][a-z]+\b", sentence)
+
+            # 3) Combine and deduplicate while preserving order
+            tokens: list[str] = []
+            seen = set()
+            for t in proper_nouns + top_keywords:
+                if t.lower() not in seen:
+                    tokens.append(t)
+                    seen.add(t.lower())
+
+            # 4) Build a compact noun-phrase headline (8–12 words if possible)
+            headline = " ".join(tokens[:12]).strip()
+            if not headline:
+                headline = sentence_scores[0][0].split(".")[0]
+            # Title-case lightly without screaming capitals
+            headline = headline[:1].upper() + headline[1:]
+            return truncate_to_chars(headline, max_length)
+
+        if mode == "long":
+            # Two-sentence style: take top 2 sentences (if available)
+            sentences_selected = [sentence_scores[0][0].strip()]
+            if len(sentence_scores) > 1:
+                sentences_selected.append(sentence_scores[1][0].strip())
+            combined = (" ".join(sentences_selected)).strip()
+            return truncate_to_chars(combined, max_length)
+
+        # Default medium: best single sentence
+        best_sentence = sentence_scores[0][0].strip()
+        return truncate_to_chars(best_sentence, max_length)
 
 def main():
     parser = argparse.ArgumentParser(description='Text Summarizer for Seequence')
