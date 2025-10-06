@@ -32,7 +32,7 @@ if [ -z "$GEMINI_API_KEY" ]; then
     echo ""
     echo "The extension will still work with the fallback summarizer."
 else
-    echo "✅ GEMINI_API_KEY found: ${GEMINI_API_KEY:0:10}..."
+    echo "GEMINI_API_KEY found: ${GEMINI_API_KEY:0:10}..."
 fi
 
 echo ""
