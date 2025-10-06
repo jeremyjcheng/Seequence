@@ -168,54 +168,198 @@ class AIProcessorFallback {
     const words = text.toLowerCase().split(/\s+/);
     const sentences = text.split(/[.!?]+/).filter((s) => s.trim().length > 0);
 
-    // Detect content type based on keywords
+    // Enhanced content type detection with more sophisticated patterns
     let type = "narrative";
-    if (
-      words.some((w) =>
-        ["because", "therefore", "causes", "leads to", "results in"].includes(w)
-      )
-    ) {
+    let confidence = 0.5;
+
+    // Causal relationships (cause-effect)
+    const causalKeywords = [
+      "because",
+      "therefore",
+      "causes",
+      "leads to",
+      "results in",
+      "due to",
+      "as a result",
+      "consequently",
+    ];
+    const causalScore = words.filter((w) => causalKeywords.includes(w)).length;
+    if (causalScore > 0) {
       type = "causal";
-    } else if (
-      words.some((w) =>
-        ["first", "second", "then", "next", "finally", "step"].includes(w)
-      )
-    ) {
-      type = "sequential";
-    } else if (
-      words.some((w) =>
-        ["versus", "compared to", "different", "similar", "contrast"].includes(
-          w
-        )
-      )
-    ) {
-      type = "comparative";
-    } else if (
-      words.some((w) =>
-        ["includes", "contains", "categories", "types", "levels"].includes(w)
-      )
-    ) {
-      type = "hierarchical";
+      confidence = Math.min(0.9, 0.5 + causalScore * 0.1);
     }
 
-    // Extract key points (simple sentence-based extraction)
-    const keyPoints = sentences
-      .slice(0, 5)
-      .map((s) => s.trim())
-      .filter((s) => s.length > 10);
+    // Sequential/Process (step-by-step)
+    const sequentialKeywords = [
+      "first",
+      "second",
+      "third",
+      "then",
+      "next",
+      "finally",
+      "step",
+      "stage",
+      "phase",
+      "after",
+      "before",
+      "initially",
+    ];
+    const sequentialScore = words.filter((w) =>
+      sequentialKeywords.includes(w)
+    ).length;
+    if (sequentialScore > causalScore && sequentialScore > 0) {
+      type = "sequential";
+      confidence = Math.min(0.9, 0.5 + sequentialScore * 0.1);
+    }
 
-    // Generate relationships
+    // Comparative (comparing things)
+    const comparativeKeywords = [
+      "versus",
+      "compared to",
+      "different",
+      "similar",
+      "contrast",
+      "however",
+      "whereas",
+      "unlike",
+      "like",
+      "both",
+      "either",
+      "neither",
+    ];
+    const comparativeScore = words.filter((w) =>
+      comparativeKeywords.includes(w)
+    ).length;
+    if (
+      comparativeScore > Math.max(causalScore, sequentialScore) &&
+      comparativeScore > 0
+    ) {
+      type = "comparative";
+      confidence = Math.min(0.9, 0.5 + comparativeScore * 0.1);
+    }
+
+    // Hierarchical (categories, classifications)
+    const hierarchicalKeywords = [
+      "includes",
+      "contains",
+      "categories",
+      "types",
+      "levels",
+      "class",
+      "group",
+      "category",
+      "kind",
+      "sort",
+      "variety",
+    ];
+    const hierarchicalScore = words.filter((w) =>
+      hierarchicalKeywords.includes(w)
+    ).length;
+    if (
+      hierarchicalScore >
+        Math.max(causalScore, sequentialScore, comparativeScore) &&
+      hierarchicalScore > 0
+    ) {
+      type = "hierarchical";
+      confidence = Math.min(0.9, 0.5 + hierarchicalScore * 0.1);
+    }
+
+    // Check for time-based narrative (biography, history)
+    const timeKeywords = [
+      "born",
+      "died",
+      "started",
+      "ended",
+      "began",
+      "finished",
+      "year",
+      "decade",
+      "century",
+      "era",
+      "period",
+    ];
+    const timeScore = words.filter((w) => timeKeywords.includes(w)).length;
+    if (timeScore > 2 && type === "narrative") {
+      type = "narrative";
+      confidence = Math.min(0.9, 0.6 + timeScore * 0.05);
+    }
+
+    // Enhanced key point extraction based on content type
+    let keyPoints = [];
+
+    if (type === "sequential" || type === "narrative") {
+      // For sequential/narrative content, extract chronological or step-based points
+      keyPoints = sentences
+        .slice(0, 6)
+        .map((s) => s.trim())
+        .filter((s) => s.length > 15)
+        .map((s, index) => ({
+          text: s,
+          order: index + 1,
+          type: "step",
+        }));
+    } else if (type === "comparative") {
+      // For comparative content, extract contrasting points
+      const comparativeSentences = sentences.filter((s) =>
+        comparativeKeywords.some((keyword) => s.toLowerCase().includes(keyword))
+      );
+      keyPoints = comparativeSentences
+        .slice(0, 4)
+        .map((s) => s.trim())
+        .filter((s) => s.length > 15)
+        .map((s, index) => ({
+          text: s,
+          order: index + 1,
+          type: "comparison",
+        }));
+    } else if (type === "hierarchical") {
+      // For hierarchical content, extract category-based points
+      keyPoints = sentences
+        .slice(0, 5)
+        .map((s) => s.trim())
+        .filter((s) => s.length > 15)
+        .map((s, index) => ({
+          text: s,
+          order: index + 1,
+          type: "category",
+        }));
+    } else {
+      // Default extraction
+      keyPoints = sentences
+        .slice(0, 5)
+        .map((s) => s.trim())
+        .filter((s) => s.length > 15)
+        .map((s, index) => ({
+          text: s,
+          order: index + 1,
+          type: "point",
+        }));
+    }
+
+    // Generate relationships based on content type
     const relationships = [];
     for (let i = 0; i < keyPoints.length - 1; i++) {
+      let relationshipType = "related";
+      if (type === "sequential" || type === "narrative") {
+        relationshipType = "sequence";
+      } else if (type === "causal") {
+        relationshipType = "causal";
+      } else if (type === "comparative") {
+        relationshipType = "comparison";
+      } else if (type === "hierarchical") {
+        relationshipType = "hierarchy";
+      }
+
       relationships.push({
         from: i,
         to: i + 1,
-        type: type === "sequential" ? "sequence" : "related",
+        type: relationshipType,
       });
     }
 
     const analysis = {
       type: type,
+      confidence: confidence,
       mainTopic: sentences[0]?.substring(0, 50) + "..." || "Main Topic",
       keyPoints: keyPoints,
       relationships: relationships,
@@ -237,21 +381,34 @@ class AIProcessorFallback {
       diagramType = this.selectDiagramType(analysis.type);
     }
 
-    // Create nodes from key points
+    // Create nodes from enhanced key points
     const nodes = analysis.keyPoints.map((point, index) => ({
       id: `node_${index}`,
-      label: point.substring(0, 30) + (point.length > 30 ? "..." : ""),
-      type: "concept",
-      content: point,
+      label:
+        point.text.substring(0, 30) + (point.text.length > 30 ? "..." : ""),
+      type: point.type || "concept",
+      content: point.text,
+      order: point.order,
+      nodeType: point.type || "concept",
     }));
 
-    // Create edges from relationships
-    const edges = analysis.relationships.map((rel, index) => ({
-      id: `edge_${index}`,
-      source: `node_${rel.from}`,
-      target: `node_${rel.to}`,
-      label: rel.type === "sequence" ? "→" : "↔",
-    }));
+    // Create edges from relationships with enhanced labels
+    const edges = analysis.relationships.map((rel, index) => {
+      let label = "→";
+      if (rel.type === "sequence") label = "→";
+      else if (rel.type === "causal") label = "→";
+      else if (rel.type === "comparison") label = "↔";
+      else if (rel.type === "hierarchy") label = "↓";
+      else label = "—";
+
+      return {
+        id: `edge_${index}`,
+        source: `node_${rel.from}`,
+        target: `node_${rel.to}`,
+        label: label,
+        type: rel.type,
+      };
+    });
 
     const diagramData = {
       title: analysis.mainTopic,
@@ -403,6 +560,32 @@ async function handleTextProcessing(request, sendResponse) {
     }
 
     const { text, diagramType } = request;
+
+    // Try Gemini content analysis first
+    try {
+      console.log("Background: Attempting Gemini content analysis...");
+      const analysisResponse = await callPythonAnalyzer(text);
+
+      if (analysisResponse.success) {
+        console.log("Background: Using Gemini analysis for diagram generation");
+        const diagramData = convertAnalysisToDiagramData(
+          analysisResponse.analysis,
+          text
+        );
+        sendResponse({
+          success: true,
+          data: diagramData,
+        });
+        return;
+      }
+    } catch (analysisError) {
+      console.log(
+        "Background: Gemini analysis failed, using fallback:",
+        analysisError.message
+      );
+    }
+
+    // Fallback to original AI processing
     const diagramData = await aiProcessor.generateDiagramData(
       text,
       diagramType
@@ -521,6 +704,112 @@ async function callPythonSummarizer(text) {
     );
     throw error;
   }
+}
+
+// Call Python analyzer via HTTP request to local server
+async function callPythonAnalyzer(text) {
+  try {
+    console.log(
+      "Background: Attempting to connect to Python analyzer server..."
+    );
+
+    const response = await fetch("http://localhost:8080/analyze", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        text: text,
+      }),
+    });
+
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+
+    const result = await response.json();
+
+    if (result.success) {
+      console.log("Background: Python analyzer succeeded:", result.analysis);
+      return result;
+    } else {
+      throw new Error(result.error || "Unknown error from Python analyzer");
+    }
+  } catch (error) {
+    console.log(
+      "Background: Python analyzer server not available:",
+      error.message
+    );
+    throw error;
+  }
+}
+
+// Convert Gemini analysis to diagram data format
+function convertAnalysisToDiagramData(analysis, originalText) {
+  console.log("Background: Converting Gemini analysis to diagram data");
+
+  // Create nodes from key points
+  const nodes = analysis.keyPoints.map((point, index) => ({
+    id: `node_${index}`,
+    label: point.text.substring(0, 30) + (point.text.length > 30 ? "..." : ""),
+    type: point.type || "concept",
+    content: point.text,
+    order: index + 1,
+    nodeType: point.type || "concept",
+    importance: point.importance || 3,
+  }));
+
+  // Create edges from relationships
+  const edges = analysis.relationships.map((rel, index) => {
+    let label = "→";
+    if (rel.type === "sequence") label = "→";
+    else if (rel.type === "causal") label = "→";
+    else if (rel.type === "comparison") label = "↔";
+    else if (rel.type === "hierarchy") label = "↓";
+    else label = "—";
+
+    return {
+      id: `edge_${index}`,
+      source: `node_${rel.from}`,
+      target: `node_${rel.to}`,
+      label: label,
+      type: rel.type,
+      description: rel.label || "",
+    };
+  });
+
+  // Map content type to diagram layout
+  let layout = "flowchart";
+  switch (analysis.contentType) {
+    case "sequential":
+    case "narrative":
+      layout = "timeline";
+      break;
+    case "comparative":
+      layout = "compare";
+      break;
+    case "hierarchical":
+      layout = "mindmap";
+      break;
+    case "causal":
+      layout = "flowchart";
+      break;
+    default:
+      layout = analysis.suggestedLayout || "flowchart";
+  }
+
+  const diagramData = {
+    title: analysis.mainTopic,
+    layout: layout,
+    nodes: nodes,
+    edges: edges,
+    type: analysis.contentType,
+    originalText: originalText,
+    geminiGenerated: true,
+  };
+
+  console.log("Background: Converted diagram data:", diagramData);
+  return diagramData;
 }
 
 // Handle diagram saving

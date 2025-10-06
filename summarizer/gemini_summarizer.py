@@ -120,6 +120,141 @@ Summary:"""
         fallback_summary = self.base_summarizer.generate_summary(text, max_length=max_length)
         print(f"Fallback summary: {fallback_summary}")
         return fallback_summary
+
+    def analyze_content_structure(self, text: str) -> dict:
+        """Use Gemini to analyze content structure and create diagram data"""
+        
+        print(f"GeminiSummarizer.analyze_content_structure called with text length: {len(text)}")
+        
+        if self.gemini_available:
+            try:
+                print("Attempting Gemini content analysis...")
+                prompt = f"""Analyze the following text and create a structured diagram representation. Return a JSON object with:
+
+1. "contentType": the type of content (choose the most appropriate):
+   - "sequential": if text contains step-by-step processes, instructions with "first/then/next/finally", or ordered procedures
+   - "narrative": if text tells a story about a person's life, historical events, or biographical content
+   - "comparative": if text compares two or more things using "versus", "compared to", "different", "similar"
+   - "hierarchical": if text organizes information into categories, types, or levels
+   - "causal": if text explains cause-and-effect relationships using "because", "therefore", "leads to"
+
+2. "mainTopic": a concise title for the content
+3. "keyPoints": array of 3-6 key points, each with:
+   - "text": the point content (max 50 chars)
+   - "type": the point type (step, comparison, category, concept, event)
+   - "importance": importance score 1-5
+4. "relationships": array of relationships between points with:
+   - "from": source point index
+   - "to": target point index  
+   - "type": relationship type (sequence, causal, comparison, hierarchy, related)
+   - "label": short description of the relationship
+5. "suggestedLayout": recommended diagram layout (timeline, flowchart, mindmap, compare)
+
+Text to analyze:
+{text}
+
+Return only valid JSON, no additional text:"""
+
+                print(f"Analysis prompt length: {len(prompt)}")
+                response = self.model.generate_content(prompt)
+                print(f"Gemini analysis response received: {type(response)}")
+                
+                if response and response.text:
+                    try:
+                        import json
+                        analysis = json.loads(response.text.strip())
+                        print(f"🤖 Raw Gemini analysis: {analysis}")
+                        
+                        # Validate and clean the analysis
+                        cleaned_analysis = self._clean_analysis(analysis)
+                        print(f"Generated Gemini analysis: {cleaned_analysis}")
+                        return cleaned_analysis
+                    except json.JSONDecodeError as e:
+                        print(f" Failed to parse Gemini JSON response: {e}")
+                        print(f" Raw response: {response.text}")
+                        return self._fallback_analysis(text)
+                else:
+                    print("Gemini API returned empty response for analysis")
+                    return self._fallback_analysis(text)
+                    
+            except Exception as e:
+                print(f"Gemini API error during analysis: {e}")
+                print(f"Error type: {type(e)}")
+                return self._fallback_analysis(text)
+        else:
+            print("Gemini not available for analysis, using fallback")
+            return self._fallback_analysis(text)
+
+    def _clean_analysis(self, analysis: dict) -> dict:
+        """Clean and validate the Gemini analysis"""
+        # Ensure required fields exist
+        cleaned = {
+            "contentType": analysis.get("contentType", "narrative"),
+            "mainTopic": analysis.get("mainTopic", "Main Topic"),
+            "keyPoints": [],
+            "relationships": [],
+            "suggestedLayout": analysis.get("suggestedLayout", "flowchart")
+        }
+        
+        # Clean key points
+        key_points = analysis.get("keyPoints", [])
+        for i, point in enumerate(key_points[:6]):  # Limit to 6 points
+            if isinstance(point, dict):
+                cleaned["keyPoints"].append({
+                    "text": str(point.get("text", f"Point {i+1}"))[:50],
+                    "type": point.get("type", "concept"),
+                    "importance": min(5, max(1, int(point.get("importance", 3))))
+                })
+            else:
+                cleaned["keyPoints"].append({
+                    "text": str(point)[:50],
+                    "type": "concept",
+                    "importance": 3
+                })
+        
+        # Clean relationships
+        relationships = analysis.get("relationships", [])
+        for rel in relationships:
+            if isinstance(rel, dict) and "from" in rel and "to" in rel:
+                cleaned["relationships"].append({
+                    "from": int(rel["from"]),
+                    "to": int(rel["to"]),
+                    "type": rel.get("type", "related"),
+                    "label": rel.get("label", "")
+                })
+        
+        return cleaned
+
+    def _fallback_analysis(self, text: str) -> dict:
+        """Fallback analysis when Gemini is not available"""
+        print("Using fallback content analysis")
+        
+        import re
+        sentences = [s.strip() for s in re.split(r'[.!?]+', text) if len(s.strip()) > 10]
+        key_points = []
+        for i, sentence in enumerate(sentences[:5]):
+            key_points.append({
+                "text": sentence[:50],
+                "type": "concept",
+                "importance": 3
+            })
+        
+        relationships = []
+        for i in range(len(key_points) - 1):
+            relationships.append({
+                "from": i,
+                "to": i + 1,
+                "type": "related",
+                "label": ""
+            })
+        
+        return {
+            "contentType": "narrative",
+            "mainTopic": sentences[0][:50] + "..." if sentences[0] else "Main Topic",
+            "keyPoints": key_points,
+            "relationships": relationships,
+            "suggestedLayout": "flowchart"
+        }
     
     def get_status(self) -> dict:
         """Get the status of available summarizers"""

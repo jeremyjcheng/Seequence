@@ -42,7 +42,7 @@ class SummarizerHandler(BaseHTTPRequestHandler):
             self.end_headers()
     
     def do_POST(self):
-        """Handle POST requests for text summarization"""
+        """Handle POST requests for text summarization and content analysis"""
         if self.path == '/summarize':
             try:
                 # Get content length
@@ -77,6 +77,42 @@ class SummarizerHandler(BaseHTTPRequestHandler):
                     'summary': summary,
                     'original_length': len(text),
                     'summary_length': len(summary),
+                    'gemini_available': status.get('gemini_available', False),
+                    'nltk_available': status.get('nltk_available', False),
+                    'spacy_available': status.get('spacy_available', False)
+                }
+                
+                self.wfile.write(json.dumps(response).encode())
+                
+            except json.JSONDecodeError:
+                self.send_error_response(400, "Invalid JSON")
+            except Exception as e:
+                self.send_error_response(500, f"Internal server error: {str(e)}")
+        elif self.path == '/analyze':
+            try:
+                content_length = int(self.headers['Content-Length'])
+                post_data = self.rfile.read(content_length)
+                request_data = json.loads(post_data.decode('utf-8'))
+                text = request_data.get('text', '')
+                
+                if not text:
+                    self.send_error_response(400, "No text provided")
+                    return
+
+                analysis = self.summarizer.analyze_content_structure(text)
+                
+                self.send_response(200)
+                self.send_header('Content-type', 'application/json')
+                self.send_header('Access-Control-Allow-Origin', '*')
+                self.send_header('Access-Control-Allow-Methods', 'POST, GET, OPTIONS')
+                self.send_header('Access-Control-Allow-Headers', 'Content-Type')
+                self.end_headers()
+                
+                status = self.summarizer.get_status()
+                response = {
+                    'success': True,
+                    'analysis': analysis,
+                    'original_length': len(text),
                     'gemini_available': status.get('gemini_available', False),
                     'nltk_available': status.get('nltk_available', False),
                     'spacy_available': status.get('spacy_available', False)

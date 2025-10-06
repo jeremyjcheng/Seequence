@@ -52,6 +52,113 @@ class DiagramRenderer {
     this.svg.call(zoom);
   }
 
+  // Get node styling based on content type and node type
+  getNodeStyle(node, contentType) {
+    const baseStyle = {
+      fill: "#4A90E2",
+      stroke: "#2E5BBA",
+      strokeWidth: 2,
+      radius: 25,
+    };
+
+    // Style based on node type
+    if (node.nodeType === "step") {
+      return {
+        ...baseStyle,
+        fill: "#FF6B6B",
+        stroke: "#E53E3E",
+        radius: 30,
+      };
+    } else if (node.nodeType === "comparison") {
+      return {
+        ...baseStyle,
+        fill: "#4ECDC4",
+        stroke: "#38B2AC",
+        radius: 28,
+      };
+    } else if (node.nodeType === "category") {
+      return {
+        ...baseStyle,
+        fill: "#45B7D1",
+        stroke: "#3182CE",
+        radius: 26,
+      };
+    }
+
+    // Style based on content type
+    switch (contentType) {
+      case "sequential":
+      case "narrative":
+        return {
+          ...baseStyle,
+          fill: "#FF6B6B",
+          stroke: "#E53E3E",
+        };
+      case "comparative":
+        return {
+          ...baseStyle,
+          fill: "#4ECDC4",
+          stroke: "#38B2AC",
+        };
+      case "hierarchical":
+        return {
+          ...baseStyle,
+          fill: "#45B7D1",
+          stroke: "#3182CE",
+        };
+      case "causal":
+        return {
+          ...baseStyle,
+          fill: "#F6AD55",
+          stroke: "#ED8936",
+        };
+      default:
+        return baseStyle;
+    }
+  }
+
+  // Get edge styling based on relationship type
+  getEdgeStyle(edge) {
+    const baseStyle = {
+      stroke: "#666",
+      strokeWidth: 2,
+      strokeOpacity: 0.6,
+    };
+
+    switch (edge.type) {
+      case "sequence":
+        return {
+          ...baseStyle,
+          stroke: "#FF6B6B",
+          strokeWidth: 3,
+          strokeDasharray: "none",
+        };
+      case "causal":
+        return {
+          ...baseStyle,
+          stroke: "#F6AD55",
+          strokeWidth: 3,
+          strokeDasharray: "5,5",
+        };
+      case "comparison":
+        return {
+          ...baseStyle,
+          stroke: "#4ECDC4",
+          strokeWidth: 2,
+          strokeDasharray: "10,5",
+        };
+      case "hierarchy":
+        return {
+          ...baseStyle,
+          stroke: "#45B7D1",
+          strokeWidth: 2,
+          strokeDasharray: "none",
+        };
+      default:
+        return baseStyle;
+    }
+  }
+
   // Render diagram based on type
   render(data, type = "auto") {
     if (!this.svg) {
