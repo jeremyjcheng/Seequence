@@ -194,6 +194,12 @@ class DiagramRenderer {
       case "compare":
         this.renderCompare(g, data);
         break;
+      case "layered":
+        this.renderWithElk(g, data, { algorithm: "layered" });
+        break;
+      case "radial":
+        this.renderWithElk(g, data, { algorithm: "radial" });
+        break;
       default:
         this.renderFlowchart(g, data);
     }
@@ -201,6 +207,95 @@ class DiagramRenderer {
     console.log(
       `Rendered ${this.currentType} diagram with ${data.nodes.length} nodes`
     );
+  }
+
+  // Use ELK (if available) to compute node coordinates, then draw with D3
+  async renderWithElk(g, data, options = {}) {
+    const hasElk =
+      typeof window !== "undefined" &&
+      (window.ELK || window.elk || window.elkjs);
+    if (!hasElk) {
+      console.warn("ELK not available; falling back to flowchart");
+      this.renderFlowchart(g, data);
+      return;
+    }
+
+    const ELK = window.ELK || window.elk || window.elkjs;
+    const elk = new ELK();
+
+    const elkGraph = {
+      id: "root",
+      layoutOptions: {
+        "elk.algorithm":
+          options.algorithm === "radial"
+            ? "org.eclipse.elk.radial"
+            : "org.eclipse.elk.layered",
+        "elk.direction": "RIGHT",
+        "elk.spacing.nodeNode": "40",
+        "elk.spacing.edgeEdge": "20",
+        "elk.layered.spacing.nodeNodeBetweenLayers": "60",
+      },
+      children: data.nodes.map((n) => ({
+        id: n.id,
+        width: 160,
+        height: 60,
+        labels: [{ text: n.label }],
+      })),
+      edges: data.edges.map((e, i) => ({
+        id: e.id || `e_${i}`,
+        sources: [e.source],
+        targets: [e.target],
+      })),
+    };
+
+    try {
+      const layout = await elk.layout(elkGraph);
+
+      const nodeById = new Map(layout.children.map((c) => [c.id, c]));
+
+      // Draw edges
+      g.append("g")
+        .selectAll("line")
+        .data(layout.edges)
+        .enter()
+        .append("line")
+        .attr("stroke", "#666")
+        .attr("stroke-width", 2)
+        .attr("x1", (d) => nodeById.get(d.sources[0]).x + 80)
+        .attr("y1", (d) => nodeById.get(d.sources[0]).y + 30)
+        .attr("x2", (d) => nodeById.get(d.targets[0]).x + 80)
+        .attr("y2", (d) => nodeById.get(d.targets[0]).y + 30);
+
+      // Draw nodes
+      const nodes = g
+        .append("g")
+        .selectAll("g")
+        .data(layout.children)
+        .enter()
+        .append("g")
+        .attr("transform", (d) => `translate(${d.x},${d.y})`);
+
+      nodes
+        .append("rect")
+        .attr("rx", 8)
+        .attr("ry", 8)
+        .attr("width", (d) => d.width)
+        .attr("height", (d) => d.height)
+        .attr("fill", "#ffffff")
+        .attr("stroke", "#cbd5e1");
+
+      nodes
+        .append("text")
+        .attr("x", 80)
+        .attr("y", 34)
+        .attr("text-anchor", "middle")
+        .attr("font-size", "12px")
+        .attr("fill", "#111827")
+        .text((d) => (d.labels && d.labels[0] ? d.labels[0].text : d.id));
+    } catch (e) {
+      console.error("ELK layout failed, falling back:", e);
+      this.renderFlowchart(g, data);
+    }
   }
 
   // Render flowchart layout

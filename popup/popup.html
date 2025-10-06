@@ -88,9 +88,6 @@
                   <button id="export-diagram" class="control-button">
                     Export
                   </button>
-                  <button id="close-diagram" class="control-button">
-                    Close
-                  </button>
                 </div>
               </div>
             </div>
@@ -107,6 +104,8 @@
 
     <!-- D3.js for diagram rendering -->
     <script src="d3.min.js"></script>
+    <!-- Optional ELK layout engine (local vendor bundle). If not present, renderer falls back automatically. -->
+    <script src="../vendor/elk.bundled.js"></script>
     <script src="../diagrams/diagram-renderer.js"></script>
     <script src="popup.js"></script>
   </body>

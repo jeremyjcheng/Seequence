@@ -40,7 +40,7 @@ document.addEventListener("DOMContentLoaded", async () => {
   resetSelectionButton.addEventListener("click", handleResetSelection);
   switchTypeButton.addEventListener("click", handleSwitchType);
   exportDiagramButton.addEventListener("click", handleExportDiagram);
-  closeDiagramButton.addEventListener("click", handleCloseDiagram);
+  // Close button removed from UI; users can click outside popup to dismiss
   if (layoutSelect) {
     layoutSelect.addEventListener("change", () => {
       if (diagramRenderer && currentDiagramData) {
