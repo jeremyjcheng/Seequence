@@ -162,8 +162,18 @@ Return only valid JSON, no additional text:"""
                 if response and response.text:
                     try:
                         import json
-                        analysis = json.loads(response.text.strip())
-                        print(f"🤖 Raw Gemini analysis: {analysis}")
+                        import re
+                        
+                        # Clean the response text - remove markdown code blocks if present
+                        response_text = response.text.strip()
+                        if response_text.startswith('```json'):
+                            response_text = response_text[7:]  # Remove ```json
+                        if response_text.endswith('```'):
+                            response_text = response_text[:-3]  # Remove ```
+                        response_text = response_text.strip()
+                        
+                        analysis = json.loads(response_text)
+                        print(f"Raw Gemini analysis: {analysis}")
                         
                         # Validate and clean the analysis
                         cleaned_analysis = self._clean_analysis(analysis)

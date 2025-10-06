@@ -44,12 +44,18 @@ class DiagramRenderer {
   addZoomBehavior() {
     const zoom = d3
       .zoom()
-      .scaleExtent([0.1, 4])
+      .scaleExtent([0.2, 5]) // Better zoom range
       .on("zoom", (event) => {
         this.svg.select("g").attr("transform", event.transform);
       });
 
     this.svg.call(zoom);
+
+    // Add double-click to reset zoom
+    this.svg.on("dblclick.zoom", null); // Disable default double-click zoom
+    this.svg.on("dblclick", () => {
+      this.svg.transition().duration(750).call(zoom.transform, d3.zoomIdentity);
+    });
   }
 
   // Get node styling based on content type and node type
@@ -201,7 +207,7 @@ class DiagramRenderer {
   renderFlowchart(g, data) {
     const { nodes, edges } = data;
 
-    // Create force simulation
+    // Create force simulation with better spacing
     const simulation = d3
       .forceSimulation(nodes)
       .force(
@@ -209,11 +215,13 @@ class DiagramRenderer {
         d3
           .forceLink(edges)
           .id((d) => d.id)
-          .distance(100)
+          .distance(200) // Increased from 100 to 200
       )
-      .force("charge", d3.forceManyBody().strength(-300))
+      .force("charge", d3.forceManyBody().strength(-800)) // Increased repulsion
       .force("center", d3.forceCenter(this.width / 2, this.height / 2))
-      .force("collision", d3.forceCollide().radius(50));
+      .force("collision", d3.forceCollide().radius(100)) // Increased collision radius for larger nodes
+      .force("x", d3.forceX(this.width / 2).strength(0.1)) // Keep nodes centered horizontally
+      .force("y", d3.forceY(this.height / 2).strength(0.1)); // Keep nodes centered vertically
 
     // Create links
     const link = g
@@ -255,23 +263,28 @@ class DiagramRenderer {
           .on("end", dragended)
       );
 
-    // Add node circles
+    // Add node circles with dynamic sizing based on content
     node
       .append("circle")
-      .attr("r", 20)
-      .attr("fill", "#4A90E2")
-      .attr("stroke", "#2E5BBA")
+      .attr("r", (d) =>
+        Math.max(30, Math.min(50, d.content ? d.content.length / 3 : 30))
+      )
+      .attr("fill", (d) => this.getNodeStyle(d, data.type).fill)
+      .attr("stroke", (d) => this.getNodeStyle(d, data.type).stroke)
       .attr("stroke-width", 2);
 
-    // Add node labels
+    // Add node labels outside the circles
     node
       .append("text")
       .attr("text-anchor", "middle")
-      .attr("dy", ".35em")
-      .attr("font-size", "12px")
+      .attr("dy", (d) =>
+        Math.max(40, Math.min(60, d.content ? d.content.length / 3 : 40))
+      )
+      .attr("font-size", "11px")
       .attr("font-weight", "500")
-      .attr("fill", "#ffffff")
-      .text((d) => this.truncateText(d.label, 15));
+      .attr("fill", "#333")
+      .attr("font-family", "Arial, sans-serif")
+      .text((d) => this.truncateText(d.label, 25));
 
     // Add node tooltips
     node.append("title").text((d) => d.content || d.label);
@@ -368,15 +381,18 @@ class DiagramRenderer {
   // Render timeline layout
   renderTimeline(g, data) {
     const { nodes } = data;
-    const timelineHeight = this.height - 100;
-    const timelineWidth = this.width - 100;
-    const stepWidth = timelineWidth / (nodes.length - 1);
+    const timelineHeight = this.height - 150; // More space for text
+    const timelineWidth = this.width - 200; // More horizontal space
+    const stepWidth = Math.max(
+      150,
+      timelineWidth / Math.max(1, nodes.length - 1)
+    ); // Minimum 150px between nodes
 
     // Create timeline line
     g.append("line")
-      .attr("x1", 50)
+      .attr("x1", 100)
       .attr("y1", timelineHeight / 2)
-      .attr("x2", timelineWidth + 50)
+      .attr("x2", 100 + (nodes.length - 1) * stepWidth)
       .attr("y2", timelineHeight / 2)
       .attr("stroke", "#666")
       .attr("stroke-width", 3);
@@ -390,34 +406,36 @@ class DiagramRenderer {
       .append("g")
       .attr(
         "transform",
-        (d, i) => `translate(${50 + i * stepWidth},${timelineHeight / 2})`
+        (d, i) => `translate(${100 + i * stepWidth},${timelineHeight / 2})`
       );
 
-    // Add node circles
+    // Add node circles with dynamic styling
     node
       .append("circle")
-      .attr("r", 15)
-      .attr("fill", "#E67E22")
-      .attr("stroke", "#D35400")
+      .attr("r", 20)
+      .attr("fill", (d) => this.getNodeStyle(d, data.type).fill)
+      .attr("stroke", (d) => this.getNodeStyle(d, data.type).stroke)
       .attr("stroke-width", 2);
 
-    // Add node labels
+    // Add node labels above the circles
     node
       .append("text")
       .attr("text-anchor", "middle")
-      .attr("y", -25)
-      .attr("font-size", "11px")
+      .attr("y", -35)
+      .attr("font-size", "12px")
       .attr("font-weight", "500")
       .attr("fill", "#333")
-      .text((d) => this.truncateText(d.label, 20));
+      .attr("font-family", "Arial, sans-serif")
+      .text((d) => this.truncateText(d.label, 30));
 
-    // Add step numbers
+    // Add step numbers below the circles
     node
       .append("text")
       .attr("text-anchor", "middle")
-      .attr("y", 30)
-      .attr("font-size", "10px")
+      .attr("y", 40)
+      .attr("font-size", "11px")
       .attr("fill", "#666")
+      .attr("font-weight", "bold")
       .text((d, i) => `Step ${i + 1}`);
 
     // Add tooltips
