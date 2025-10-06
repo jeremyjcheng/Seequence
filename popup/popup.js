@@ -23,7 +23,7 @@ document.addEventListener("DOMContentLoaded", async () => {
   const diagramTitleElement = document.getElementById("diagram-title");
   const summaryLengthContainer = document.getElementById("summary-length");
   const summaryLengthOverlay = document.getElementById(
-    "summary-length-overlay"
+    "summary-length-diagram"
   );
   let summaryLength = "short"; // default
 
@@ -114,6 +114,16 @@ document.addEventListener("DOMContentLoaded", async () => {
     hasSelectionDiv.classList.add("hidden");
     processingDiv.classList.add("hidden");
     diagramViewDiv.classList.add("hidden");
+    // Reset overlay selector active state to current value
+    const overlay = document.getElementById("summary-length-diagram");
+    if (overlay) {
+      for (const btn of overlay.querySelectorAll(".length-button")) {
+        btn.classList.toggle(
+          "active",
+          (btn.getAttribute("data-length") || "") === summaryLength
+        );
+      }
+    }
   }
 
   async function showSelectedText(text) {
