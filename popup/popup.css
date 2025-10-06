@@ -193,8 +193,9 @@ body {
 /* Diagram view styles */
 .diagram-header {
   display: flex;
-  justify-content: space-between;
-  align-items: center;
+  flex-direction: column; /* stack controls above title */
+  align-items: stretch;
+  gap: 6px;
   margin-bottom: 12px;
   padding-bottom: 8px;
   border-bottom: 1px solid #e1e5e9;
@@ -204,6 +205,7 @@ body {
   max-height: none; /* allow tall titles */
   overflow: visible;
   white-space: normal;
+  text-align: center; /* keep title centered */
 }
 
 .diagram-header h3 {
