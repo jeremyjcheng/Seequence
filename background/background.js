@@ -561,42 +561,8 @@ async function handleTextProcessing(request, sendResponse) {
 
     const { text, diagramType } = request;
 
-    // Try Gemini content analysis first
-    try {
-      console.log("Background: Attempting Gemini content analysis...");
-      const analysisResponse = await callPythonAnalyzer(text);
-
-      if (analysisResponse.success) {
-        console.log("Background: Using Gemini analysis for diagram generation");
-        const diagramData = convertAnalysisToDiagramData(
-          analysisResponse.analysis,
-          text
-        );
-        // Attach open-intent fields for renderer (no hardcoded taxonomy)
-        if (analysisResponse.open_intent) {
-          diagramData.intent = analysisResponse.open_intent.intent_label;
-          diagramData.intentExplanation =
-            analysisResponse.open_intent.intent_explanation;
-          diagramData.visualization =
-            analysisResponse.open_intent.visualization;
-          diagramData.slots = analysisResponse.open_intent.slots;
-          diagramData.intentConfidence =
-            analysisResponse.open_intent.confidence;
-        }
-        sendResponse({
-          success: true,
-          data: diagramData,
-        });
-        return;
-      }
-    } catch (analysisError) {
-      console.log(
-        "Background: Gemini analysis failed, using fallback:",
-        analysisError.message
-      );
-    }
-
-    // Fallback to original AI processing
+    // Use built-in AI processing for diagram generation
+    console.log("Background: Using built-in AI for diagram generation");
     const diagramData = await aiProcessor.generateDiagramData(
       text,
       diagramType
@@ -618,6 +584,24 @@ async function handleTextProcessing(request, sendResponse) {
 // Handle AI availability check
 async function handleAICheck(sendResponse) {
   try {
+    // Check Chrome on-device AI first
+    const hasChromeAI = !!(self.ai && self.ai.summarizer);
+    console.log("Background: Chrome AI available:", hasChromeAI);
+
+    if (hasChromeAI) {
+      sendResponse({
+        success: true,
+        status: {
+          available: true,
+          chrome_ai: true,
+          sessionActive: true,
+          fallback: false,
+        },
+      });
+      return;
+    }
+
+    // Fallback to original AI processor for diagram generation
     if (!aiProcessor) {
       await initializeAI();
     }
@@ -625,9 +609,14 @@ async function handleAICheck(sendResponse) {
     const status = aiProcessor
       ? aiProcessor.getStatus()
       : { available: false, sessionActive: false };
+
     sendResponse({
       success: true,
-      status: status,
+      status: {
+        ...status,
+        chrome_ai: false,
+        fallback: true,
+      },
     });
   } catch (error) {
     console.error("Error checking AI status:", error);
@@ -649,28 +638,57 @@ async function handleGenerateSummary(request, sendResponse) {
       text.substring(0, 100) + "..."
     );
 
-    // Try Python summarizer first
-    try {
-      console.log("Background: Attempting Python summarizer...");
-      const summary = await callPythonSummarizer(text, length);
-      // Trust the server to handle length appropriately - no client-side truncation
-      console.log("Background: Python summarizer succeeded:", summary);
-      sendResponse({
-        success: true,
-        summary: summary,
-      });
-      return;
-    } catch (pythonError) {
-      console.log("Background: Python summarizer failed:", pythonError.message);
+    // Check for Chrome's on-device AI
+    const hasSummarizer = !!(self.ai && self.ai.summarizer);
+    console.log("Background: Chrome AI summarizer available:", hasSummarizer);
 
-      // No fallback - require Python server
-      sendResponse({
-        success: false,
-        error:
-          "Python summarizer server not available. Please start the server with: ./start-python-summarizer.sh",
-      });
-      return;
+    if (hasSummarizer) {
+      try {
+        console.log("Background: Using Chrome on-device AI...");
+        const summary = await summarizeWithChromeAI(text, length);
+        console.log("Background: Chrome AI succeeded:", summary);
+        sendResponse({
+          success: true,
+          summary: summary,
+          used_chrome_ai: true,
+        });
+        return;
+      } catch (chromeAIError) {
+        console.log("Background: Chrome AI failed:", chromeAIError.message);
+        // Fall through to basic fallback
+      }
     }
+
+    // Fallback - basic truncation with length awareness
+    console.log("Background: Using basic truncation fallback...");
+    let basicSummary;
+    if (length === "short") {
+      // Try to get first sentence or truncate at 60 chars
+      const firstSentence = text.split(/[.!?]/)[0];
+      basicSummary =
+        firstSentence.length > 60
+          ? firstSentence.substring(0, 60) + "..."
+          : firstSentence;
+    } else if (length === "medium") {
+      // Try to get first two sentences or truncate at 140 chars
+      const sentences = text.split(/[.!?]/).slice(0, 2);
+      const twoSentences =
+        sentences.join(". ") + (sentences.length > 1 ? "." : "");
+      basicSummary =
+        twoSentences.length > 140
+          ? twoSentences.substring(0, 140) + "..."
+          : twoSentences;
+    } else {
+      // Long - truncate at 200 chars
+      basicSummary = text.length > 200 ? text.substring(0, 200) + "..." : text;
+    }
+
+    sendResponse({
+      success: true,
+      summary: basicSummary,
+      used_chrome_ai: false,
+      fallback: true,
+    });
   } catch (error) {
     console.error("Error generating summary:", error);
     sendResponse({
@@ -680,161 +698,31 @@ async function handleGenerateSummary(request, sendResponse) {
   }
 }
 
-// Call Python summarizer via HTTP request to local server
-async function callPythonSummarizer(text, length) {
+// Chrome on-device AI summarization
+async function summarizeWithChromeAI(text, length) {
   try {
-    console.log(
-      "Background: Attempting to connect to Python summarizer server..."
-    );
+    const summarizer = await self.ai.summarizer.create();
 
-    const response = await fetch("http://localhost:8080/summarize", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        text: text,
-        // Let server handle length intelligently based on length_label
-        max_length: 500, // Generous limit, server will respect length_label style
-        // Pass style hint so server can change summary style, not just length
-        length_label: length,
-      }),
+    // Map length to Chrome AI style
+    const style =
+      length === "short"
+        ? "headline"
+        : length === "medium"
+        ? "sentence"
+        : "paragraph";
+
+    console.log(`Background: Chrome AI style: ${style} for length: ${length}`);
+
+    const result = await summarizer.summarize({
+      text: text,
+      style: style,
     });
 
-    if (!response.ok) {
-      throw new Error(`HTTP error! status: ${response.status}`);
-    }
-
-    const result = await response.json();
-
-    if (result.success) {
-      console.log(
-        "Background: Python summarizer succeeded. used_gemini=",
-        result.used_gemini,
-        " len=",
-        result.summary_length
-      );
-      console.log(
-        "Background: Summary (preview):",
-        (result.summary || "").slice(0, 120)
-      );
-      return result.summary;
-    } else {
-      throw new Error(result.error || "Unknown error from Python summarizer");
-    }
+    return result.summary || result.text || result;
   } catch (error) {
-    console.log(
-      "Background: Python summarizer server not available:",
-      error.message
-    );
+    console.error("Chrome AI summarization error:", error);
     throw error;
   }
-}
-
-// Call Python analyzer via HTTP request to local server
-async function callPythonAnalyzer(text) {
-  try {
-    console.log(
-      "Background: Attempting to connect to Python analyzer server..."
-    );
-
-    const response = await fetch("http://localhost:8080/analyze", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        text: text,
-      }),
-    });
-
-    if (!response.ok) {
-      throw new Error(`HTTP error! status: ${response.status}`);
-    }
-
-    const result = await response.json();
-
-    if (result.success) {
-      console.log("Background: Python analyzer succeeded:", result.analysis);
-      return result;
-    } else {
-      throw new Error(result.error || "Unknown error from Python analyzer");
-    }
-  } catch (error) {
-    console.log(
-      "Background: Python analyzer server not available:",
-      error.message
-    );
-    throw error;
-  }
-}
-
-// Convert Gemini analysis to diagram data format
-function convertAnalysisToDiagramData(analysis, originalText) {
-  console.log("Background: Converting Gemini analysis to diagram data");
-
-  // Create nodes from key points
-  const nodes = analysis.keyPoints.map((point, index) => ({
-    id: `node_${index}`,
-    label: point.text.substring(0, 30) + (point.text.length > 30 ? "..." : ""),
-    type: point.type || "concept",
-    content: point.text,
-    order: index + 1,
-    nodeType: point.type || "concept",
-    importance: point.importance || 3,
-  }));
-
-  // Create edges from relationships
-  const edges = analysis.relationships.map((rel, index) => {
-    let label = "→";
-    if (rel.type === "sequence") label = "→";
-    else if (rel.type === "causal") label = "→";
-    else if (rel.type === "comparison") label = "↔";
-    else if (rel.type === "hierarchy") label = "↓";
-    else label = "—";
-
-    return {
-      id: `edge_${index}`,
-      source: `node_${rel.from}`,
-      target: `node_${rel.to}`,
-      label: label,
-      type: rel.type,
-      description: rel.label || "",
-    };
-  });
-
-  // Map content type to diagram layout
-  let layout = "flowchart";
-  switch (analysis.contentType) {
-    case "sequential":
-    case "narrative":
-      layout = "timeline";
-      break;
-    case "comparative":
-      layout = "compare";
-      break;
-    case "hierarchical":
-      layout = "mindmap";
-      break;
-    case "causal":
-      layout = "flowchart";
-      break;
-    default:
-      layout = analysis.suggestedLayout || "flowchart";
-  }
-
-  const diagramData = {
-    title: analysis.mainTopic,
-    layout: layout,
-    nodes: nodes,
-    edges: edges,
-    type: analysis.contentType,
-    originalText: originalText,
-    geminiGenerated: true,
-  };
-
-  console.log("Background: Converted diagram data:", diagramData);
-  return diagramData;
 }
 
 // Handle diagram saving

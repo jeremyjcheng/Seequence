@@ -297,6 +297,12 @@ document.addEventListener("DOMContentLoaded", async () => {
           return;
         }
 
+        // Show notice if using fallback AI instead of Chrome's on-device AI
+        if (!aiStatus.status.chrome_ai) {
+          console.log("Using fallback AI - Chrome on-device AI not available");
+          // You could show a subtle notice here if desired
+        }
+
         // Process text with AI
         const processResponse = await chrome.runtime.sendMessage({
           action: "processText",
