@@ -449,6 +449,10 @@ async function handleGenerateSummary(request, sendResponse) {
   try {
     const { text } = request;
     console.log("Background: Generating summary for text length:", text.length);
+    console.log(
+      "Background: Text to summarize:",
+      text.substring(0, 100) + "..."
+    );
 
     // Try Python summarizer first
     try {

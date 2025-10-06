@@ -131,6 +131,11 @@ document.addEventListener("DOMContentLoaded", async () => {
     // Generate summary for the diagram title
     try {
       console.log("Popup: Generating summary for diagram title");
+      console.log("Popup: Diagram data:", diagramData);
+      console.log(
+        "Popup: Text to summarize:",
+        diagramData.originalText || diagramData.title || "Generated Diagram"
+      );
       const summaryResponse = await chrome.runtime.sendMessage({
         action: "generateSummary",
         text:
