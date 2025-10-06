@@ -584,42 +584,7 @@ async function handleTextProcessing(request, sendResponse) {
 // Handle AI availability check
 async function handleAICheck(sendResponse) {
   try {
-    // Check Chrome on-device AI first
-    const hasChromeAI = !!(self.ai && self.ai.summarizer);
-    console.log("Background: Chrome AI available:", hasChromeAI);
-
-    // Test Chrome AI if available
-    let chromeAITest = false;
-    if (hasChromeAI) {
-      try {
-        console.log("Background: Testing Chrome AI...");
-        const testSummary = await summarizeWithChromeAI(
-          "This is a test sentence for Chrome AI.",
-          "short"
-        );
-        chromeAITest = true;
-        console.log("Background: Chrome AI test successful:", testSummary);
-      } catch (testError) {
-        console.log("Background: Chrome AI test failed:", testError.message);
-        chromeAITest = false;
-      }
-    }
-
-    if (hasChromeAI && chromeAITest) {
-      sendResponse({
-        success: true,
-        status: {
-          available: true,
-          chrome_ai: true,
-          chrome_ai_working: true,
-          sessionActive: true,
-          fallback: false,
-        },
-      });
-      return;
-    }
-
-    // Fallback to original AI processor for diagram generation
+    // Initialize AI processor for diagram generation
     if (!aiProcessor) {
       await initializeAI();
     }
@@ -632,8 +597,7 @@ async function handleAICheck(sendResponse) {
       success: true,
       status: {
         ...status,
-        chrome_ai: false,
-        fallback: true,
+        smart_summarization: true, // Always available
       },
     });
   } catch (error) {
@@ -656,36 +620,13 @@ async function handleGenerateSummary(request, sendResponse) {
       text.substring(0, 100) + "..."
     );
 
-    // Check for Chrome's on-device AI
-    const hasSummarizer = !!(self.ai && self.ai.summarizer);
-    console.log("Background: Chrome AI summarizer available:", hasSummarizer);
-
-    if (hasSummarizer) {
-      try {
-        console.log("Background: Using Chrome on-device AI...");
-        const summary = await summarizeWithChromeAI(text, length);
-        console.log("Background: Chrome AI succeeded:", summary);
-        sendResponse({
-          success: true,
-          summary: summary,
-          used_chrome_ai: true,
-        });
-        return;
-      } catch (chromeAIError) {
-        console.log("Background: Chrome AI failed:", chromeAIError.message);
-        // Fall through to basic fallback
-      }
-    }
-
-    // Fallback - smart summarization without external dependencies
-    console.log("Background: Using smart fallback summarization...");
+    // Use smart summarization (works on all Chrome versions)
+    console.log("Background: Using smart summarization...");
     const summary = await smartSummarize(text, length);
 
     sendResponse({
       success: true,
       summary: summary,
-      used_chrome_ai: false,
-      fallback: true,
     });
   } catch (error) {
     console.error("Error generating summary:", error);
@@ -693,33 +634,6 @@ async function handleGenerateSummary(request, sendResponse) {
       success: false,
       error: error.message,
     });
-  }
-}
-
-// Chrome on-device AI summarization
-async function summarizeWithChromeAI(text, length) {
-  try {
-    const summarizer = await self.ai.summarizer.create();
-
-    // Map length to Chrome AI style
-    const style =
-      length === "short"
-        ? "headline"
-        : length === "medium"
-        ? "sentence"
-        : "paragraph";
-
-    console.log(`Background: Chrome AI style: ${style} for length: ${length}`);
-
-    const result = await summarizer.summarize({
-      text: text,
-      style: style,
-    });
-
-    return result.summary || result.text || result;
-  } catch (error) {
-    console.error("Chrome AI summarization error:", error);
-    throw error;
   }
 }
 
@@ -732,17 +646,20 @@ async function smartSummarize(text, length) {
     return text.length > 100 ? text.substring(0, 100) + "..." : text;
   }
 
-  // Score sentences by importance (simple heuristic)
+  // Score sentences by importance (enhanced heuristic)
   const scoredSentences = sentences.map((sentence, index) => {
     let score = 0;
     const words = sentence.toLowerCase().split(/\s+/);
+    const sentenceLower = sentence.toLowerCase();
 
     // Position bonus (first sentences are usually important)
-    if (index === 0) score += 10;
-    else if (index < 3) score += 5;
+    if (index === 0) score += 15;
+    else if (index < 3) score += 8;
+    else if (index < 5) score += 3;
 
-    // Length bonus (not too short, not too long)
-    if (words.length >= 8 && words.length <= 25) score += 3;
+    // Length bonus (prefer medium-length sentences)
+    if (words.length >= 10 && words.length <= 30) score += 5;
+    else if (words.length >= 5 && words.length <= 40) score += 2;
 
     // Keyword bonus (important words)
     const importantWords = [
@@ -754,14 +671,45 @@ async function smartSummarize(text, length) {
       "critical",
       "significant",
       "major",
+      "notable",
+      "famous",
+      "known",
+      "renowned",
+      "invented",
+      "created",
+      "developed",
+      "founded",
+      "established",
+      "born",
+      "died",
+      "lived",
+      "worked",
+      "studied",
+      "graduated",
     ];
     importantWords.forEach((word) => {
-      if (sentence.toLowerCase().includes(word)) score += 2;
+      if (sentenceLower.includes(word)) score += 3;
     });
 
     // Proper noun bonus (names, places, etc.)
     const properNouns = sentence.match(/\b[A-Z][a-z]+\b/g) || [];
-    score += properNouns.length;
+    score += properNouns.length * 2;
+
+    // Date bonus (sentences with years are often important)
+    if (/\b(19|20)\d{2}\b/.test(sentence)) score += 4;
+
+    // Definition bonus (sentences that define something)
+    if (
+      sentenceLower.includes(" is ") ||
+      sentenceLower.includes(" was ") ||
+      sentenceLower.includes(" are ") ||
+      sentenceLower.includes(" were ")
+    ) {
+      score += 2;
+    }
+
+    // Question/answer bonus
+    if (sentence.includes("?") || sentence.includes(":")) score += 1;
 
     return { sentence: sentence.trim(), score, index };
   });
@@ -774,7 +722,15 @@ async function smartSummarize(text, length) {
     const best = scoredSentences[0];
     let summary = best.sentence;
 
-    // Make it more headline-like
+    // Make it more headline-like - remove unnecessary words
+    summary = summary.replace(/^(The|A|An)\s+/i, ""); // Remove articles
+    summary = summary.replace(/\s+(is|was|are|were)\s+/gi, " "); // Remove linking verbs
+    summary = summary.replace(/\s+(a|an|the)\s+/gi, " "); // Remove more articles
+
+    // Clean up extra spaces
+    summary = summary.replace(/\s+/g, " ").trim();
+
+    // Make it punchy
     if (summary.length > 60) {
       summary = summary.substring(0, 60).trim();
       // Try to end at a word boundary
