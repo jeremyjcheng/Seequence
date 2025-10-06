@@ -701,6 +701,8 @@ async function callPythonSummarizer(text, length) {
         text: text,
         // Make tiers more distinct
         max_length: length === "long" ? 320 : length === "medium" ? 140 : 60,
+        // Pass style hint so server can change summary style, not just length
+        length_label: length,
       }),
     });
 
