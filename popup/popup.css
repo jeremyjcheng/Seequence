@@ -317,14 +317,21 @@ body {
 .overlay-controls {
   position: absolute;
   top: 8px;
+  left: 8px;
   right: 8px;
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 8px;
   z-index: 5;
 }
 
 .overlay-buttons {
   display: flex;
   gap: 6px;
+}
+
+.overlay-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
 }

@@ -682,7 +682,7 @@ async function callPythonSummarizer(text, length) {
       },
       body: JSON.stringify({
         text: text,
-        max_length: length === "long" ? 240 : length === "medium" ? 160 : 120,
+        max_length: length === "long" ? 200 : length === "medium" ? 120 : 60,
       }),
     });
 

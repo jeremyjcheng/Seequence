@@ -22,6 +22,9 @@ document.addEventListener("DOMContentLoaded", async () => {
   const closeDiagramButton = document.getElementById("close-diagram");
   const diagramTitleElement = document.getElementById("diagram-title");
   const summaryLengthContainer = document.getElementById("summary-length");
+  const summaryLengthOverlay = document.getElementById(
+    "summary-length-overlay"
+  );
   let summaryLength = "short"; // default
 
   // Initialize diagram renderer
@@ -50,6 +53,28 @@ document.addEventListener("DOMContentLoaded", async () => {
         }
         target.classList.add("active");
         summaryLength = target.getAttribute("data-length") || "short";
+        // If diagram already shown, regenerate title summary
+        if (currentDiagramData) {
+          showDiagram(currentDiagramData);
+        }
+      }
+    });
+  }
+
+  if (summaryLengthOverlay) {
+    summaryLengthOverlay.addEventListener("click", (e) => {
+      const target = e.target;
+      if (target && target.matches(".length-button")) {
+        for (const btn of summaryLengthOverlay.querySelectorAll(
+          ".length-button"
+        )) {
+          btn.classList.remove("active");
+        }
+        target.classList.add("active");
+        summaryLength = target.getAttribute("data-length") || "short";
+        if (currentDiagramData) {
+          showDiagram(currentDiagramData);
+        }
       }
     });
   }
