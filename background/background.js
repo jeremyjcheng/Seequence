@@ -572,6 +572,17 @@ async function handleTextProcessing(request, sendResponse) {
           analysisResponse.analysis,
           text
         );
+        // Attach open-intent fields for renderer (no hardcoded taxonomy)
+        if (analysisResponse.open_intent) {
+          diagramData.intent = analysisResponse.open_intent.intent_label;
+          diagramData.intentExplanation =
+            analysisResponse.open_intent.intent_explanation;
+          diagramData.visualization =
+            analysisResponse.open_intent.visualization;
+          diagramData.slots = analysisResponse.open_intent.slots;
+          diagramData.intentConfidence =
+            analysisResponse.open_intent.confidence;
+        }
         sendResponse({
           success: true,
           data: diagramData,

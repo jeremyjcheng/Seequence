@@ -100,6 +100,17 @@ class SummarizerHandler(BaseHTTPRequestHandler):
                     return
 
                 analysis = self.summarizer.analyze_content_structure(text)
+                # Open intent analysis (model-driven, free-form)
+                try:
+                    open_intent = self.summarizer.analyze_open_intent(text)
+                except Exception as e:
+                    open_intent = {
+                        'intent_label': 'generic',
+                        'intent_explanation': f'open intent failed: {e}',
+                        'visualization': 'timeline',
+                        'slots': {'steps': []},
+                        'confidence': 0.0,
+                    }
                 
                 self.send_response(200)
                 self.send_header('Content-type', 'application/json')
@@ -112,6 +123,7 @@ class SummarizerHandler(BaseHTTPRequestHandler):
                 response = {
                     'success': True,
                     'analysis': analysis,
+                    'open_intent': open_intent,
                     'original_length': len(text),
                     'gemini_available': status.get('gemini_available', False),
                     'nltk_available': status.get('nltk_available', False),

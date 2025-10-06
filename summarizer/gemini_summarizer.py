@@ -265,6 +265,73 @@ Return only valid JSON, no additional text:"""
             "relationships": relationships,
             "suggestedLayout": "flowchart"
         }
+
+    # -------------------- Open Intent Analysis (contract for step 1) --------------------
+    def analyze_open_intent(self, text: str) -> dict:
+        """Model-driven, open intent contract. Returns free-form intent and visualization suggestion.
+
+        Response keys:
+        - intent_label: free-form string
+        - intent_explanation: short natural-language rationale
+        - visualization: free-form string suggestion (e.g., freytag_pyramid, step_flow, timeline, compare_2col, cause_chain, custom_radial)
+        - slots: object with the fields your visualization needs
+        - confidence: float 0–1
+        - graph: optional { nodes: [], edges: [] }
+        """
+
+        if self.gemini_available:
+            try:
+                prompt = (
+                    "You are a visual teaching assistant. Analyze the input text and produce a JSON object with these keys only:\n"
+                    "- intent_label: a short free-form label (no taxonomy).\n"
+                    "- intent_explanation: one concise sentence explaining why.\n"
+                    "- visualization: a free-form diagram suggestion (examples but not limited to: freytag_pyramid, step_flow, timeline, compare_2col, cause_chain, custom_radial).\n"
+                    "- slots: an object containing the data fields that your visualization needs. Keep 3-7 simple items, child-friendly labels.\n"
+                    "- confidence: a number 0 to 1.\n"
+                    "- graph (optional): { nodes: [{id,label}], edges: [{source,target}] } if useful.\n\n"
+                    f"Text:\n{text}\n\n"
+                    "Return JSON only, no markdown fences, no commentary."
+                )
+
+                response = self.model.generate_content(prompt)
+                if response and response.text:
+                    import json
+                    raw = response.text.strip()
+                    # Remove accidental markdown fences if present
+                    if raw.startswith('```json'):
+                        raw = raw[7:]
+                    if raw.endswith('```'):
+                        raw = raw[:-3]
+                    parsed = json.loads(raw)
+                    # Minimal sanitation
+                    if "intent_label" not in parsed:
+                        parsed["intent_label"] = "generic"
+                    if "visualization" not in parsed:
+                        parsed["visualization"] = "timeline"
+                    if "slots" not in parsed or not isinstance(parsed["slots"], dict):
+                        parsed["slots"] = {"steps": self._simple_steps_from_text(text)}
+                    if "confidence" not in parsed:
+                        parsed["confidence"] = 0.5
+                    return parsed
+            except Exception as e:
+                print(f"Open intent analysis failed: {e}")
+
+        # Fallback (no Gemini)
+        return {
+            "intent_label": "generic",
+            "intent_explanation": "Fallback simple reading of the text.",
+            "visualization": "timeline",
+            "slots": {"steps": self._simple_steps_from_text(text)},
+            "confidence": 0.3,
+        }
+
+    def _simple_steps_from_text(self, text: str):
+        import re
+        sentences = [s.strip() for s in re.split(r'[.!?]+', text) if len(s.strip()) > 3]
+        steps = sentences[:5]
+        if not steps:
+            steps = [text[:60] + ("…" if len(text) > 60 else "")]
+        return steps
     
     def get_status(self) -> dict:
         """Get the status of available summarizers"""
