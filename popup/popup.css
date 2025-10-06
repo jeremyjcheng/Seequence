@@ -319,6 +319,7 @@ body {
 .length-button.active {
   background: #ffffff;
   color: #111827;
+  font-weight: 700; /* make selected length clearly identifiable */
 }
 
 /* Overlay controls inside diagram */

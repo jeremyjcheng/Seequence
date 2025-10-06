@@ -642,10 +642,16 @@ async function handleGenerateSummary(request, sendResponse) {
     try {
       console.log("Background: Attempting Python summarizer...");
       const summary = await callPythonSummarizer(text, length);
+      // Enforce hard caps client-side as a safeguard if server returns longer text
+      const maxLen = length === "long" ? 320 : length === "medium" ? 140 : 60;
+      const finalSummary =
+        summary && summary.length > maxLen
+          ? summary.slice(0, maxLen - 1).trimEnd() + "…"
+          : summary;
       console.log("Background: Python summarizer succeeded:", summary);
       sendResponse({
         success: true,
-        summary: summary,
+        summary: finalSummary,
       });
       return;
     } catch (pythonError) {

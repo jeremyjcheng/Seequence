@@ -197,6 +197,17 @@ document.addEventListener("DOMContentLoaded", async () => {
         length: summaryLength,
       });
 
+      // Keep both segmented controls in sync after response
+      const overlay = document.getElementById("summary-length-diagram");
+      if (overlay) {
+        for (const btn of overlay.querySelectorAll(".length-button")) {
+          btn.classList.toggle(
+            "active",
+            (btn.getAttribute("data-length") || "") === summaryLength
+          );
+        }
+      }
+
       if (summaryResponse.success) {
         console.log(
           "Popup: Using generated summary for diagram title:",
