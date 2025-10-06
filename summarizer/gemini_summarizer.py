@@ -90,35 +90,35 @@ Text to summarize:
 
 Summary:"""
 
-                print(f"🤖 Prompt length: {len(prompt)}")
+                print(f"Prompt length: {len(prompt)}")
                 response = self.model.generate_content(prompt)
-                print(f"🤖 Gemini response received: {type(response)}")
+                print(f"Gemini response received: {type(response)}")
                 
                 if response and response.text:
                     summary = response.text.strip()
-                    print(f"🤖 Raw Gemini response: {summary}")
+                    print(f"Raw Gemini response: {summary}")
                     
                     # Ensure it's within the length limit
                     if len(summary) > max_length:
                         summary = summary[:max_length-3] + "..."
-                        print(f"🤖 Summary truncated to {max_length} chars")
+                        print(f"Summary truncated to {max_length} chars")
                     
-                    print(f"✅ Generated Gemini summary: {summary}")
+                    print(f"Generated Gemini summary: {summary}")
                     return summary
                 else:
-                    print("❌ Gemini API returned empty response, using fallback")
+                    print("Gemini API returned empty response, using fallback")
                     
             except Exception as e:
-                print(f"❌ Gemini API error: {e}")
-                print(f"❌ Error type: {type(e)}")
-                print("🔄 Using fallback summarizer due to Gemini error")
+                print(f"Gemini API error: {e}")
+                print(f"Error type: {type(e)}")
+                print("Using fallback summarizer due to Gemini error")
         else:
-            print("⚠️ Gemini not available, using fallback summarizer")
+            print("Gemini not available, using fallback summarizer")
         
         # Fallback to base summarizer
-        print("📝 Using fallback summarizer")
+        print("Using fallback summarizer")
         fallback_summary = self.base_summarizer.generate_summary(text, max_length=max_length)
-        print(f"📝 Fallback summary: {fallback_summary}")
+        print(f"Fallback summary: {fallback_summary}")
         return fallback_summary
     
     def get_status(self) -> dict:
