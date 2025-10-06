@@ -23,6 +23,29 @@ class BuiltInAIProcessor {
   // Check availability of built-in AI APIs
   async checkAvailability() {
     console.log("Checking built-in AI API availability...");
+    console.log("Chrome version:", navigator.userAgent);
+    console.log("Navigator.ai exists:", "ai" in navigator);
+
+    // First check if navigator.ai exists at all
+    if (!("ai" in navigator)) {
+      console.warn(
+        "❌ navigator.ai is not available - Chrome built-in AI APIs not supported"
+      );
+      this.availableAPIs = {
+        summarizer: false,
+        prompt: false,
+        translator: false,
+        languageDetector: false,
+        writer: false,
+        rewriter: false,
+        proofreader: false,
+      };
+      this.isAvailable = false;
+      return this.availableAPIs;
+    }
+
+    console.log("✅ navigator.ai is available, checking individual APIs...");
+    console.log("Available AI APIs:", Object.keys(navigator.ai));
 
     const checks = await Promise.allSettled([
       this.checkSummarizerAPI(),
@@ -50,6 +73,12 @@ class BuiltInAIProcessor {
 
     console.log("Built-in AI API availability:", this.availableAPIs);
     console.log("Overall availability:", this.isAvailable);
+
+    if (!this.isAvailable) {
+      console.warn(
+        "⚠️ No built-in AI APIs are available. Extension will use fallback methods."
+      );
+    }
 
     return this.availableAPIs;
   }

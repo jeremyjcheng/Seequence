@@ -495,12 +495,16 @@ async function initializeAI() {
     console.log("Built-in AI Processor initialized:", builtInAvailable);
 
     if (builtInAvailable) {
-      console.log("Using built-in AI APIs for hackathon compliance");
+      console.log("✅ Using built-in AI APIs for hackathon compliance");
       return;
     }
 
+    console.log(
+      "⚠️ Built-in AI APIs not available, initializing fallback processors..."
+    );
+
     // Fallback to legacy AI processor if built-in APIs not available
-    console.log("Built-in AI not available, trying legacy AI processor");
+    console.log("Trying legacy AI processor...");
     aiProcessor = new AIProcessor();
     const isAvailable = await aiProcessor.checkAvailability();
     console.log("Legacy AI Processor initialized:", isAvailable);
@@ -512,8 +516,10 @@ async function initializeAI() {
       const fallbackAvailable = await aiProcessor.checkAvailability();
       console.log("Fallback AI Processor initialized:", fallbackAvailable);
     }
+
+    console.log("✅ Fallback AI processors initialized successfully");
   } catch (error) {
-    console.error("Error initializing AI processor:", error);
+    console.error("❌ Error initializing AI processor:", error);
     console.error("Error details:", error.stack);
 
     // Try fallback as last resort
@@ -641,11 +647,16 @@ async function handleTextProcessing(request, sendResponse) {
       return;
     }
 
-    // No AI available
+    // No AI available - provide detailed error message
+    const errorMessage =
+      builtInAIProcessor && !builtInAIProcessor.isAvailable
+        ? "Built-in AI APIs not available. Please ensure Chrome 138+ with AI flags enabled, or start the Python server for hybrid processing."
+        : "No AI processing available. Please start the Python server with: ./start-python-summarizer.sh";
+
+    console.error("❌ No AI processing available:", errorMessage);
     sendResponse({
       success: false,
-      error:
-        "No AI processing available. Please ensure Chrome 138+ with built-in AI APIs or start the Python server.",
+      error: errorMessage,
     });
   } catch (error) {
     console.error("Error processing text:", error);
