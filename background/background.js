@@ -653,16 +653,11 @@ async function handleGenerateSummary(request, sendResponse) {
     try {
       console.log("Background: Attempting Python summarizer...");
       const summary = await callPythonSummarizer(text, length);
-      // Enforce hard caps client-side as a safeguard if server returns longer text
-      const maxLen = length === "long" ? 320 : length === "medium" ? 140 : 60;
-      const finalSummary =
-        summary && summary.length > maxLen
-          ? summary.slice(0, maxLen - 1).trimEnd() + "…"
-          : summary;
+      // Trust the server to handle length appropriately - no client-side truncation
       console.log("Background: Python summarizer succeeded:", summary);
       sendResponse({
         success: true,
-        summary: finalSummary,
+        summary: summary,
       });
       return;
     } catch (pythonError) {
@@ -699,8 +694,8 @@ async function callPythonSummarizer(text, length) {
       },
       body: JSON.stringify({
         text: text,
-        // Make tiers more distinct
-        max_length: length === "long" ? 320 : length === "medium" ? 140 : 60,
+        // Let server handle length intelligently based on length_label
+        max_length: 500, // Generous limit, server will respect length_label style
         // Pass style hint so server can change summary style, not just length
         length_label: length,
       }),
