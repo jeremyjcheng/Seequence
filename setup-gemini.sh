@@ -19,7 +19,7 @@ pip install google-generativeai
 # Check for API key
 if [ -z "$GEMINI_API_KEY" ]; then
     echo ""
-    echo "⚠️  GEMINI_API_KEY environment variable not set!"
+    echo "GEMINI_API_KEY environment variable not set!"
     echo ""
     echo "To get a Gemini API key:"
     echo "1. Go to https://makersuite.google.com/app/apikey"

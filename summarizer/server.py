@@ -16,7 +16,10 @@ from gemini_summarizer import GeminiSummarizer
 class SummarizerHandler(BaseHTTPRequestHandler):
     def __init__(self, *args, **kwargs):
         # Try Gemini first, fallback to base summarizer
+        print("Initializing SummarizerHandler...")
         self.summarizer = GeminiSummarizer()
+        status = self.summarizer.get_status()
+        print(f"Summarizer status: {status}")
         super().__init__(*args, **kwargs)
     
     def do_GET(self):

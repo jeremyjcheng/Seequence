@@ -29,7 +29,7 @@ class GeminiSummarizer:
         if GEMINI_AVAILABLE and self.api_key:
             try:
                 genai.configure(api_key=self.api_key)
-                self.model = genai.GenerativeModel('gemini-1.5-flash-001')
+                self.model = genai.GenerativeModel('gemini-2.0-flash')
                 self.gemini_available = True
                 print("Gemini API initialized successfully")
             except Exception as e:
@@ -70,8 +70,14 @@ class GeminiSummarizer:
     def generate_summary(self, text: str, max_length: int = 120) -> str:
         """Generate a reader-friendly summary using Gemini API with fallback"""
         
+        print(f"🔍 GeminiSummarizer.generate_summary called with text length: {len(text)}")
+        print(f"🔍 Gemini available: {self.gemini_available}")
+        print(f"🔍 Max length: {max_length}")
+        print(f"🔍 Text preview: {text[:100]}...")
+        
         if self.gemini_available:
             try:
+                print("🤖 Attempting Gemini API call...")
                 # Create a prompt for natural summarization
                 prompt = f"""Please create a concise, reader-friendly summary of the following text. The summary should be:
 - Natural and easy to read
@@ -84,26 +90,36 @@ Text to summarize:
 
 Summary:"""
 
+                print(f"🤖 Prompt length: {len(prompt)}")
                 response = self.model.generate_content(prompt)
+                print(f"🤖 Gemini response received: {type(response)}")
                 
                 if response and response.text:
                     summary = response.text.strip()
+                    print(f"🤖 Raw Gemini response: {summary}")
                     
                     # Ensure it's within the length limit
                     if len(summary) > max_length:
                         summary = summary[:max_length-3] + "..."
+                        print(f"🤖 Summary truncated to {max_length} chars")
                     
-                    print(f"Gemini summary generated: {summary}")
+                    print(f"✅ Generated Gemini summary: {summary}")
                     return summary
                 else:
-                    print("Gemini API returned empty response, using fallback")
+                    print("❌ Gemini API returned empty response, using fallback")
                     
             except Exception as e:
-                print(f"Gemini API error: {e}, using fallback")
+                print(f"❌ Gemini API error: {e}")
+                print(f"❌ Error type: {type(e)}")
+                print("🔄 Using fallback summarizer due to Gemini error")
+        else:
+            print("⚠️ Gemini not available, using fallback summarizer")
         
         # Fallback to base summarizer
-        print("Using fallback summarizer")
-        return self.base_summarizer.generate_summary(text, max_length)
+        print("📝 Using fallback summarizer")
+        fallback_summary = self.base_summarizer.generate_summary(text, max_length=max_length)
+        print(f"📝 Fallback summary: {fallback_summary}")
+        return fallback_summary
     
     def get_status(self) -> dict:
         """Get the status of available summarizers"""
