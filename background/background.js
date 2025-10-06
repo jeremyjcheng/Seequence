@@ -630,8 +630,9 @@ async function handleAICheck(sendResponse) {
 // Handle summary generation
 async function handleGenerateSummary(request, sendResponse) {
   try {
-    const { text } = request;
+    const { text, length } = request;
     console.log("Background: Generating summary for text length:", text.length);
+    console.log("Background: Requested summary length:", length);
     console.log(
       "Background: Text to summarize:",
       text.substring(0, 100) + "..."
@@ -640,7 +641,7 @@ async function handleGenerateSummary(request, sendResponse) {
     // Try Python summarizer first
     try {
       console.log("Background: Attempting Python summarizer...");
-      const summary = await callPythonSummarizer(text);
+      const summary = await callPythonSummarizer(text, length);
       console.log("Background: Python summarizer succeeded:", summary);
       sendResponse({
         success: true,
@@ -668,7 +669,7 @@ async function handleGenerateSummary(request, sendResponse) {
 }
 
 // Call Python summarizer via HTTP request to local server
-async function callPythonSummarizer(text) {
+async function callPythonSummarizer(text, length) {
   try {
     console.log(
       "Background: Attempting to connect to Python summarizer server..."
@@ -681,7 +682,7 @@ async function callPythonSummarizer(text) {
       },
       body: JSON.stringify({
         text: text,
-        max_length: 120,
+        max_length: length === "long" ? 240 : length === "medium" ? 160 : 120,
       }),
     });
 

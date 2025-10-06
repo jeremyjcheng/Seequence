@@ -29,6 +29,16 @@
           <div class="selected-text-preview">
             <p id="selected-text"></p>
           </div>
+          <div class="summary-length">
+            <span class="summary-length-label">Summary length:</span>
+            <div class="summary-length-segmented" id="summary-length">
+              <button class="length-button active" data-length="short">
+                Short
+              </button>
+              <button class="length-button" data-length="medium">Medium</button>
+              <button class="length-button" data-length="long">Long</button>
+            </div>
+          </div>
           <div class="button-group">
             <button id="create-diagram" class="primary-button">
               Create Diagram
@@ -47,15 +57,24 @@
         <div id="diagram-view" class="state-message hidden">
           <div class="diagram-header">
             <h3 id="diagram-title">Diagram</h3>
-            <div class="diagram-controls">
-              <button id="switch-type" class="control-button">
-                Switch View
-              </button>
-              <button id="export-diagram" class="control-button">Export</button>
-              <button id="close-diagram" class="control-button">Close</button>
+          </div>
+          <div id="diagram-container" class="diagram-container">
+            <div class="overlay-controls">
+              <div class="overlay-row">
+                <div class="overlay-buttons">
+                  <button id="switch-type" class="control-button">
+                    Switch View
+                  </button>
+                  <button id="export-diagram" class="control-button">
+                    Export
+                  </button>
+                  <button id="close-diagram" class="control-button">
+                    Close
+                  </button>
+                </div>
+              </div>
             </div>
           </div>
-          <div id="diagram-container" class="diagram-container"></div>
         </div>
       </main>
 

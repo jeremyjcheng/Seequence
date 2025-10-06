@@ -21,6 +21,8 @@ document.addEventListener("DOMContentLoaded", async () => {
   const exportDiagramButton = document.getElementById("export-diagram");
   const closeDiagramButton = document.getElementById("close-diagram");
   const diagramTitleElement = document.getElementById("diagram-title");
+  const summaryLengthContainer = document.getElementById("summary-length");
+  let summaryLength = "short"; // default
 
   // Initialize diagram renderer
   let diagramRenderer = null;
@@ -35,6 +37,22 @@ document.addEventListener("DOMContentLoaded", async () => {
   switchTypeButton.addEventListener("click", handleSwitchType);
   exportDiagramButton.addEventListener("click", handleExportDiagram);
   closeDiagramButton.addEventListener("click", handleCloseDiagram);
+
+  // Summary length selection
+  if (summaryLengthContainer) {
+    summaryLengthContainer.addEventListener("click", (e) => {
+      const target = e.target;
+      if (target && target.matches(".length-button")) {
+        for (const btn of summaryLengthContainer.querySelectorAll(
+          ".length-button"
+        )) {
+          btn.classList.remove("active");
+        }
+        target.classList.add("active");
+        summaryLength = target.getAttribute("data-length") || "short";
+      }
+    });
+  }
 
   async function checkForSelectedText() {
     try {
@@ -132,6 +150,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     try {
       console.log("Popup: Generating summary for diagram title");
       console.log("Popup: Diagram data:", diagramData);
+      console.log("Popup: Selected summary length:", summaryLength);
       console.log(
         "Popup: Text to summarize:",
         diagramData.originalText || diagramData.title || "Generated Diagram"
@@ -140,6 +159,7 @@ document.addEventListener("DOMContentLoaded", async () => {
         action: "generateSummary",
         text:
           diagramData.originalText || diagramData.title || "Generated Diagram",
+        length: summaryLength,
       });
 
       if (summaryResponse.success) {
