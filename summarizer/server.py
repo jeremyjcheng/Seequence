@@ -93,6 +93,7 @@ class SummarizerHandler(BaseHTTPRequestHandler):
                     'original_length': len(text),
                     'summary_length': len(summary),
                     'gemini_available': status.get('gemini_available', False),
+                    'used_gemini': getattr(self.summarizer, 'last_used', '') == 'gemini',
                     'nltk_available': status.get('nltk_available', False),
                     'spacy_available': status.get('spacy_available', False)
                 }

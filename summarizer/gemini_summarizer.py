@@ -25,6 +25,7 @@ class GeminiSummarizer:
         self.api_key = api_key or self._load_api_key()
         self.gemini_available = False
         self.base_summarizer = TextSummarizer()
+        self.last_used = "init"
         
         if GEMINI_AVAILABLE and self.api_key:
             try:
@@ -121,6 +122,7 @@ class GeminiSummarizer:
                         print(f"[Gemini] truncated_to={max_length}")
                     
                     print(f"[Gemini] final_summary_len={len(summary)} preview='{summary[:80]}'")
+                    self.last_used = "gemini"
                     return summary
                 else:
                     print("[Gemini] Empty API response, using fallback")
@@ -136,6 +138,7 @@ class GeminiSummarizer:
         print(f"[Fallback] Generating base summary. max_length={max_length}")
         fallback_summary = self.base_summarizer.generate_summary(text, max_length=max_length)
         print(f"[Fallback] summary_len={len(fallback_summary)} preview='{fallback_summary[:80]}'")
+        self.last_used = "fallback"
         return fallback_summary
 
     def analyze_content_structure(self, text: str) -> dict:

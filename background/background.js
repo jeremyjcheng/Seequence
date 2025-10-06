@@ -713,7 +713,16 @@ async function callPythonSummarizer(text, length) {
     const result = await response.json();
 
     if (result.success) {
-      console.log("Background: Python summarizer succeeded:", result.summary);
+      console.log(
+        "Background: Python summarizer succeeded. used_gemini=",
+        result.used_gemini,
+        " len=",
+        result.summary_length
+      );
+      console.log(
+        "Background: Summary (preview):",
+        (result.summary || "").slice(0, 120)
+      );
       return result.summary;
     } else {
       throw new Error(result.error || "Unknown error from Python summarizer");
