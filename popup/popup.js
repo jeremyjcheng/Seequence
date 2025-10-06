@@ -20,6 +20,7 @@ document.addEventListener("DOMContentLoaded", async () => {
   const switchTypeButton = document.getElementById("switch-type");
   const exportDiagramButton = document.getElementById("export-diagram");
   const closeDiagramButton = document.getElementById("close-diagram");
+  const layoutSelect = document.getElementById("layout-select");
   const diagramTitleElement = document.getElementById("diagram-title");
   const summaryLengthContainer = document.getElementById("summary-length");
   const summaryLengthOverlay = document.getElementById(
@@ -40,6 +41,13 @@ document.addEventListener("DOMContentLoaded", async () => {
   switchTypeButton.addEventListener("click", handleSwitchType);
   exportDiagramButton.addEventListener("click", handleExportDiagram);
   closeDiagramButton.addEventListener("click", handleCloseDiagram);
+  if (layoutSelect) {
+    layoutSelect.addEventListener("change", () => {
+      if (diagramRenderer && currentDiagramData) {
+        diagramRenderer.render(currentDiagramData, layoutSelect.value);
+      }
+    });
+  }
 
   // Summary length selection
   if (summaryLengthContainer) {
