@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Chrome Gemini Nano Test</title>
+  </head>
+  <body>
+    <h1>Chrome Gemini Nano Test</h1>
+    <button id="testBtn">Test Chrome Gemini</button>
+    <div id="result"></div>
+
+    <script>
+      document.getElementById("testBtn").addEventListener("click", async () => {
+        const resultDiv = document.getElementById("result");
+
+        try {
+          // Check if Chrome AI is available
+          if (!window.ai || !window.ai.prompt) {
+            resultDiv.innerHTML =
+              '<p style="color: red;">Chrome AI not available. Make sure you have Chrome Dev/Canary with AI flags enabled.</p>';
+            return;
+          }
+
+          resultDiv.innerHTML = "<p>Testing Chrome Gemini Nano...</p>";
+
+          // Test with a simple prompt
+          const result = await window.ai.prompt({
+            text: "Summarize this in one sentence: The quick brown fox jumps over the lazy dog. This is a test of Chrome's built-in AI capabilities.",
+            maxTokens: 50,
+            temperature: 0.3,
+          });
+
+          const summary = result.text || result.response || result;
+          resultDiv.innerHTML = `
+                    <p style="color: green;">✅ Chrome Gemini Nano is working!</p>
+                    <p><strong>Response:</strong> ${summary}</p>
+                    <p><strong>Response type:</strong> ${typeof summary}</p>
+                `;
+        } catch (error) {
+          resultDiv.innerHTML = `
+                    <p style="color: red;">❌ Error: ${error.message}</p>
+                    <p><strong>Error type:</strong> ${error.constructor.name}</p>
+                `;
+        }
+      });
+    </script>
+  </body>
+</html>

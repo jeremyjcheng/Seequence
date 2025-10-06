@@ -298,9 +298,13 @@ document.addEventListener("DOMContentLoaded", async () => {
         }
 
         // Show notice if using fallback AI instead of Chrome's on-device AI
-        if (!aiStatus.status.chrome_ai) {
-          console.log("Using fallback AI - Chrome on-device AI not available");
+        if (!aiStatus.status.chrome_gemini) {
+          console.log(
+            "Chrome Gemini Nano not available - using fallback methods"
+          );
           // You could show a subtle notice here if desired
+        } else {
+          console.log("Chrome Gemini Nano is available - using local AI");
         }
 
         // Process text with AI

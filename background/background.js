@@ -584,6 +584,10 @@ async function handleTextProcessing(request, sendResponse) {
 // Handle AI availability check
 async function handleAICheck(sendResponse) {
   try {
+    // Check Chrome's built-in Gemini Nano first
+    const hasChromeGemini = !!(self.ai && self.ai.prompt);
+    console.log("Background: Chrome Gemini Nano available:", hasChromeGemini);
+
     // Initialize AI processor for diagram generation
     if (!aiProcessor) {
       await initializeAI();
@@ -597,7 +601,9 @@ async function handleAICheck(sendResponse) {
       success: true,
       status: {
         ...status,
+        chrome_gemini: hasChromeGemini,
         smart_summarization: true, // Always available
+        python_server: true, // Available if server is running
       },
     });
   } catch (error) {
@@ -620,13 +626,50 @@ async function handleGenerateSummary(request, sendResponse) {
       text.substring(0, 100) + "..."
     );
 
-    // Use smart summarization (works on all Chrome versions)
-    console.log("Background: Using smart summarization...");
+    // Try Chrome's built-in Gemini Nano first
+    try {
+      console.log("Background: Attempting Chrome Gemini Nano...");
+      const summary = await summarizeWithChromeGemini(text, length);
+      console.log("Background: Chrome Gemini Nano succeeded:", summary);
+      sendResponse({
+        success: true,
+        summary: summary,
+        used_chrome_gemini: true,
+      });
+      return;
+    } catch (chromeGeminiError) {
+      console.log(
+        "Background: Chrome Gemini Nano failed:",
+        chromeGeminiError.message
+      );
+    }
+
+    // Fallback to Python server with external Gemini API
+    try {
+      console.log("Background: Attempting Python server with Gemini API...");
+      const summary = await callPythonSummarizer(text, length);
+      console.log("Background: Python server succeeded:", summary);
+      sendResponse({
+        success: true,
+        summary: summary,
+        used_gemini: true,
+        used_chrome_gemini: false,
+      });
+      return;
+    } catch (pythonError) {
+      console.log("Background: Python server failed:", pythonError.message);
+    }
+
+    // Final fallback to smart summarization
+    console.log("Background: Using smart fallback summarization...");
     const summary = await smartSummarize(text, length);
 
     sendResponse({
       success: true,
       summary: summary,
+      used_gemini: false,
+      used_chrome_gemini: false,
+      fallback: true,
     });
   } catch (error) {
     console.error("Error generating summary:", error);
@@ -634,6 +677,98 @@ async function handleGenerateSummary(request, sendResponse) {
       success: false,
       error: error.message,
     });
+  }
+}
+
+// Chrome's built-in Gemini Nano summarization
+async function summarizeWithChromeGemini(text, length) {
+  try {
+    // Check if Chrome's AI is available
+    if (!self.ai || !self.ai.prompt) {
+      throw new Error(
+        "Chrome AI not available - requires Chrome Dev/Canary with flags enabled"
+      );
+    }
+
+    // Map length to prompt style
+    let promptStyle;
+    if (length === "short") {
+      promptStyle =
+        "Write a headline-style summary (8-12 words). Make it punchy and direct. No ellipsis.";
+    } else if (length === "medium") {
+      promptStyle =
+        "Write one complete sentence (18-28 words). Cover the main point and context. No ellipsis.";
+    } else {
+      promptStyle =
+        "Write two concise sentences (35-60 words total). Include one concrete detail beyond a headline. No ellipsis.";
+    }
+
+    const prompt = `${promptStyle}\n\nText to summarize:\n${text}`;
+
+    console.log(`Background: Chrome Gemini prompt length: ${prompt.length}`);
+
+    // Use Chrome's built-in AI
+    const result = await self.ai.prompt({
+      text: prompt,
+      // Additional parameters for better results
+      maxTokens: 100,
+      temperature: 0.3, // Lower temperature for more consistent summaries
+    });
+
+    let summary = result.text || result.response || result;
+
+    // Clean up the response
+    if (typeof summary === "string") {
+      summary = summary.trim();
+      // Remove any quotes or extra formatting
+      summary = summary.replace(/^["']|["']$/g, "");
+    }
+
+    console.log(`Background: Chrome Gemini response length: ${summary.length}`);
+    return summary;
+  } catch (error) {
+    console.error("Chrome Gemini Nano error:", error);
+    throw error;
+  }
+}
+
+// Call Python summarizer via HTTP request to local server
+async function callPythonSummarizer(text, length) {
+  try {
+    console.log(
+      "Background: Attempting to connect to Python summarizer server..."
+    );
+
+    const response = await fetch("http://localhost:8080/summarize", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        text: text,
+        max_length: 500,
+        length_label: length,
+      }),
+    });
+
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+
+    const result = await response.json();
+
+    if (result.success) {
+      console.log("Background: Python summarizer succeeded:", result.summary);
+      return result.summary;
+    } else {
+      throw new Error(result.error || "Unknown error from Python summarizer");
+    }
+  } catch (error) {
+    console.log(
+      "Background: Python summarizer server not available:",
+      error.message
+    );
+    throw error;
   }
 }
 
