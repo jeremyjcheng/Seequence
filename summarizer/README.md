@@ -26,6 +26,32 @@ This will install:
 - spaCy with English language model
 - All required dependencies
 
+### Optional: Gemini API for Better Summaries
+
+For more natural, reader-friendly summaries, you can integrate Google's Gemini API:
+
+1. **Get a Gemini API key**:
+
+   - Go to [Google AI Studio](https://makersuite.google.com/app/apikey)
+   - Create a new API key
+
+2. **Set up the API key**:
+
+   ```bash
+   export GEMINI_API_KEY='your-api-key-here'
+   ```
+
+3. **Install Gemini dependencies**:
+
+   ```bash
+   ./setup-gemini.sh
+   ```
+
+4. **Test the integration**:
+   ```bash
+   python test-gemini.py
+   ```
+
 ## Usage
 
 ### Command Line

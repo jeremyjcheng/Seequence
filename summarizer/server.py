@@ -11,10 +11,12 @@ from urllib.parse import urlparse, parse_qs
 import threading
 import time
 from summarizer import TextSummarizer
+from gemini_summarizer import GeminiSummarizer
 
 class SummarizerHandler(BaseHTTPRequestHandler):
     def __init__(self, *args, **kwargs):
-        self.summarizer = TextSummarizer()
+        # Try Gemini first, fallback to base summarizer
+        self.summarizer = GeminiSummarizer()
         super().__init__(*args, **kwargs)
     
     def do_GET(self):
@@ -24,10 +26,12 @@ class SummarizerHandler(BaseHTTPRequestHandler):
             self.send_header('Content-type', 'application/json')
             self.send_header('Access-Control-Allow-Origin', '*')
             self.end_headers()
+            status = self.summarizer.get_status()
             response = {
                 'status': 'healthy',
-                'nltk_available': hasattr(self.summarizer, 'stemmer') and self.summarizer.stemmer is not None,
-                'spacy_available': self.summarizer.nlp is not None
+                'gemini_available': status.get('gemini_available', False),
+                'nltk_available': status.get('nltk_available', False),
+                'spacy_available': status.get('spacy_available', False)
             }
             self.wfile.write(json.dumps(response).encode())
         else:
@@ -64,13 +68,15 @@ class SummarizerHandler(BaseHTTPRequestHandler):
                 self.send_header('Access-Control-Allow-Headers', 'Content-Type')
                 self.end_headers()
                 
+                status = self.summarizer.get_status()
                 response = {
                     'success': True,
                     'summary': summary,
                     'original_length': len(text),
                     'summary_length': len(summary),
-                    'nltk_available': hasattr(self.summarizer, 'stemmer') and self.summarizer.stemmer is not None,
-                    'spacy_available': self.summarizer.nlp is not None
+                    'gemini_available': status.get('gemini_available', False),
+                    'nltk_available': status.get('nltk_available', False),
+                    'spacy_available': status.get('spacy_available', False)
                 }
                 
                 self.wfile.write(json.dumps(response).encode())
