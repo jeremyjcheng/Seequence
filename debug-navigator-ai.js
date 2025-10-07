@@ -1,50 +1,56 @@
-// Debug script to check window.ai availability
-// Run this in the extension's background script console
+// Debug script to test Chrome's built-in AI APIs (like Mochi used)
+// Run this in Chrome DevTools console to check AI availability
 
-console.log("=== NAVIGATOR.AI DEBUG SCRIPT ===");
+console.log("=== Chrome Built-in AI Debug (Mochi Style) ===");
 console.log("Chrome version:", navigator.userAgent);
-console.log("window.ai exists:", "ai" in window);
 
-if ("ai" in window) {
-  console.log("window.ai object:", window.ai);
-  console.log("Available AI APIs:", Object.keys(window.ai));
+// Check for navigator.summarizer (like Mochi used)
+console.log("navigator.summarizer exists:", "summarizer" in navigator);
+if ("summarizer" in navigator) {
+  console.log("navigator.summarizer object:", navigator.summarizer);
 
-  // Test Prompt API
-  if ("prompt" in window.ai) {
-    console.log("window.ai.prompt exists:", typeof window.ai.prompt);
-    try {
-      const testResult = await window.ai.prompt.prompt({
-        prompt: "Hello, this is a test.",
-      });
-      console.log("Prompt API test successful:", testResult);
-    } catch (error) {
-      console.log("Prompt API test failed:", error);
-    }
-  } else {
-    console.log("window.ai.prompt does not exist");
-  }
-
-  // Test Summarizer API
-  if ("summarizer" in window.ai) {
-    console.log("window.ai.summarizer exists:", typeof window.ai.summarizer);
-    try {
-      const testResult = await window.ai.summarizer.summarize({
-        text: "This is a test.",
-        maxLength: 10,
-      });
-      console.log("Summarizer API test successful:", testResult);
-    } catch (error) {
-      console.log("Summarizer API test failed:", error);
-    }
-  } else {
-    console.log("window.ai.summarizer does not exist");
+  try {
+    const result = await navigator.summarizer.summarize({
+      text: "This is a test of the Chrome built-in Summarizer API.",
+      maxLength: 50,
+    });
+    console.log("Summarizer API test result:", result);
+  } catch (error) {
+    console.error("Summarizer API test error:", error);
   }
 } else {
-  console.log("window.ai is not available");
-  console.log("This means:");
-  console.log("1. Chrome version is too old (< 128)");
-  console.log("2. Chrome flags are not enabled");
-  console.log("3. Not using Chrome Dev/Canary channel");
+  console.log("navigator.summarizer does not exist");
 }
+
+// Check for navigator.translator
+console.log("navigator.translator exists:", "translator" in navigator);
+if ("translator" in navigator) {
+  console.log("navigator.translator object:", navigator.translator);
+
+  try {
+    const result = await navigator.translator.translate({
+      text: "Hello world",
+      from: "en",
+      to: "es",
+    });
+    console.log("Translator API test result:", result);
+  } catch (error) {
+    console.error("Translator API test error:", error);
+  }
+} else {
+  console.log("navigator.translator does not exist");
+}
+
+// Check all navigator properties
+console.log("All navigator properties:", Object.keys(navigator));
+console.log(
+  "Navigator properties containing 'ai' or 'summarizer':",
+  Object.keys(navigator).filter(
+    (key) =>
+      key.toLowerCase().includes("ai") ||
+      key.toLowerCase().includes("summarizer") ||
+      key.toLowerCase().includes("translator")
+  )
+);
 
 console.log("=== END DEBUG SCRIPT ===");

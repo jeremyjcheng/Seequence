@@ -24,13 +24,26 @@ class BuiltInAIProcessor {
       "SEQUENCE DEBUG: Checking Chrome built-in AI API availability..."
     );
     console.log("SEQUENCE DEBUG: Chrome version:", navigator.userAgent);
-    console.log("SEQUENCE DEBUG: self.ai exists:", "ai" in self);
-    console.log("SEQUENCE DEBUG: self.ai object:", self.ai);
+    console.log(
+      "SEQUENCE DEBUG: navigator.summarizer exists:",
+      "summarizer" in navigator
+    );
+    console.log(
+      "SEQUENCE DEBUG: navigator.translator exists:",
+      "translator" in navigator
+    );
+    console.log(
+      "SEQUENCE DEBUG: navigator object keys:",
+      Object.keys(navigator)
+    );
 
-    // First check if self.ai exists at all
-    if (!("ai" in self)) {
+    // Check for Chrome's built-in AI APIs (like Mochi used)
+    const hasSummarizer = "summarizer" in navigator;
+    const hasTranslator = "translator" in navigator;
+
+    if (!hasSummarizer && !hasTranslator) {
       console.warn(
-        "SEQUENCE DEBUG: self.ai is not available - Chrome built-in AI APIs not supported"
+        "SEQUENCE DEBUG: Chrome built-in AI APIs not available - no summarizer or translator"
       );
       console.warn(
         "SEQUENCE DEBUG: Please enable Chrome flags: chrome://flags/#prompt-api-for-gemini-nano"
@@ -41,25 +54,24 @@ class BuiltInAIProcessor {
     }
 
     console.log(
-      "SEQUENCE DEBUG: self.ai is available, checking individual APIs..."
+      "SEQUENCE DEBUG: Chrome built-in AI APIs detected, checking individual APIs..."
     );
-    console.log("SEQUENCE DEBUG: Available AI APIs:", Object.keys(self.ai));
-    console.log("SEQUENCE DEBUG: self.ai object:", self.ai);
 
-    // Check Prompt API (primary for Gemini Nano - following Mochi's approach)
-    console.log("SEQUENCE DEBUG: Checking Prompt API...");
-    const promptAvailable = await this.checkPromptAPI();
-
-    // Check Summarizer API (fallback)
+    // Check Summarizer API (primary - like Mochi used)
     console.log("SEQUENCE DEBUG: Checking Summarizer API...");
     const summarizerAvailable = await this.checkSummarizerAPI();
 
+    // Check Translator API (secondary)
+    console.log("SEQUENCE DEBUG: Checking Translator API...");
+    const translatorAvailable = await this.checkTranslatorAPI();
+
     this.availableAPIs = {
-      prompt: promptAvailable,
+      prompt: false, // Not using prompt API
       summarizer: summarizerAvailable,
+      translator: translatorAvailable,
     };
 
-    this.isAvailable = promptAvailable || summarizerAvailable;
+    this.isAvailable = summarizerAvailable || translatorAvailable;
 
     console.log(
       "SEQUENCE DEBUG: Built-in AI API availability:",
@@ -107,13 +119,13 @@ class BuiltInAIProcessor {
     return false;
   }
 
-  // Check Summarizer API availability (fallback)
+  // Check Summarizer API availability (primary - like Mochi used)
   async checkSummarizerAPI() {
     console.log("SEQUENCE DEBUG: Testing Summarizer API...");
     try {
-      if ("ai" in navigator && "summarizer" in self.ai) {
-        console.log("SEQUENCE DEBUG: self.ai.summarizer exists, testing...");
-        const testResult = await self.ai.summarizer.summarize({
+      if ("summarizer" in navigator) {
+        console.log("SEQUENCE DEBUG: navigator.summarizer exists, testing...");
+        const testResult = await navigator.summarizer.summarize({
           text: "This is a test.",
           maxLength: 10,
         });
@@ -121,7 +133,7 @@ class BuiltInAIProcessor {
         console.log("SEQUENCE DEBUG: Test result:", testResult);
         return true;
       } else {
-        console.log("SEQUENCE DEBUG: self.ai.summarizer does not exist");
+        console.log("SEQUENCE DEBUG: navigator.summarizer does not exist");
         return false;
       }
     } catch (error) {
@@ -134,14 +146,42 @@ class BuiltInAIProcessor {
     return false;
   }
 
+  // Check Translator API availability (secondary)
+  async checkTranslatorAPI() {
+    console.log("SEQUENCE DEBUG: Testing Translator API...");
+    try {
+      if ("translator" in navigator) {
+        console.log("SEQUENCE DEBUG: navigator.translator exists, testing...");
+        const testResult = await navigator.translator.translate({
+          text: "Hello world",
+          from: "en",
+          to: "es",
+        });
+        console.log("SEQUENCE DEBUG: Translator API available!");
+        console.log("SEQUENCE DEBUG: Test result:", testResult);
+        return true;
+      } else {
+        console.log("SEQUENCE DEBUG: navigator.translator does not exist");
+        return false;
+      }
+    } catch (error) {
+      console.log(
+        "SEQUENCE DEBUG: Translator API not available:",
+        error.message
+      );
+      console.log("SEQUENCE DEBUG: Error details:", error);
+    }
+    return false;
+  }
+
   // Analyze text structure using built-in AI APIs (following Mochi's pattern)
   async analyzeTextStructure(text) {
     const startTime = performance.now();
 
     try {
-      // Use Prompt API for content analysis (primary method like Mochi)
-      if (this.availableAPIs.prompt) {
-        const analysis = await this.analyzeWithPromptAPI(text);
+      // Use Summarizer API for content analysis (primary method like Mochi)
+      if (this.availableAPIs.summarizer) {
+        const analysis = await this.analyzeWithSummarizerAPI(text);
         this.performanceMetrics.promptTime += performance.now() - startTime;
         this.performanceMetrics.totalRequests++;
         return analysis;
@@ -155,7 +195,44 @@ class BuiltInAIProcessor {
     }
   }
 
-  // Analyze text using Prompt API (following Mochi's approach)
+  // Analyze text using Summarizer API (following Mochi's approach)
+  async analyzeWithSummarizerAPI(text) {
+    console.log("SEQUENCE DEBUG: Using Summarizer API for analysis...");
+
+    try {
+      // Use Chrome's built-in Summarizer API to get key points
+      const summary = await navigator.summarizer.summarize({
+        text: text,
+        maxLength: 200, // Get a concise summary
+      });
+
+      console.log("SEQUENCE DEBUG: Summarizer API result:", summary);
+
+      // Parse the summary to extract structure
+      const keyPoints = summary
+        .split(".")
+        .filter((point) => point.trim().length > 0);
+
+      return {
+        type: "narrative", // Default to narrative for now
+        mainTopic: keyPoints[0]?.substring(0, 50) || "Unknown Topic",
+        keyPoints: keyPoints.slice(0, 5).map((point, index) => ({
+          text: point.trim(),
+          type: "concept",
+          importance: 5 - index,
+        })),
+        relationships: [],
+        structure: "linear",
+        confidence: 0.8,
+        source: "chrome-summarizer",
+      };
+    } catch (error) {
+      console.error("SEQUENCE DEBUG: Summarizer API error:", error);
+      throw error;
+    }
+  }
+
+  // Analyze text using Prompt API (legacy method)
   async analyzeWithPromptAPI(text) {
     const prompt = `Analyze this text and extract its structure for diagram generation. Return a JSON object with:
     - "type": the content type (causal, sequential, comparative, hierarchical, narrative)
@@ -189,17 +266,17 @@ class BuiltInAIProcessor {
     const startTime = performance.now();
 
     try {
-      // Use Prompt API for summarization (primary method like Mochi)
-      if (this.availableAPIs.prompt) {
-        const summary = await this.summarizeWithPromptAPI(text, length);
+      // Use Summarizer API for summarization (primary method like Mochi)
+      if (this.availableAPIs.summarizer) {
+        const summary = await this.summarizeWithSummarizerAPI(text, length);
         this.performanceMetrics.promptTime += performance.now() - startTime;
         this.performanceMetrics.totalRequests++;
         return summary;
       }
 
-      // Fallback to Summarizer API
-      if (this.availableAPIs.summarizer) {
-        const summary = await this.summarizeWithBuiltInAPI(text, length);
+      // Fallback to Prompt API
+      if (this.availableAPIs.prompt) {
+        const summary = await this.summarizeWithPromptAPI(text, length);
         this.performanceMetrics.promptTime += performance.now() - startTime;
         this.performanceMetrics.totalRequests++;
         return summary;
@@ -213,7 +290,40 @@ class BuiltInAIProcessor {
     }
   }
 
-  // Summarize using Prompt API (following Mochi's approach)
+  // Summarize using Summarizer API (following Mochi's approach)
+  async summarizeWithSummarizerAPI(text, length) {
+    console.log("SEQUENCE DEBUG: Using Summarizer API for summary...");
+
+    const lengthMapping = {
+      short: 100,
+      medium: 200,
+      long: 300,
+    };
+
+    const maxLength = lengthMapping[length] || 100;
+
+    try {
+      const summary = await navigator.summarizer.summarize({
+        text: text,
+        maxLength: maxLength,
+      });
+
+      console.log("SEQUENCE DEBUG: Summarizer API summary result:", summary);
+
+      return {
+        summary: summary,
+        originalLength: text.length,
+        summaryLength: summary.length,
+        compressionRatio: summary.length / text.length,
+        source: "chrome-summarizer",
+      };
+    } catch (error) {
+      console.error("SEQUENCE DEBUG: Summarizer API error:", error);
+      throw error;
+    }
+  }
+
+  // Summarize using Prompt API (legacy method)
   async summarizeWithPromptAPI(text, length) {
     const lengthMapping = {
       short: "2-3 sentences",
