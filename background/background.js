@@ -3,7 +3,7 @@
 
 console.log("SEQUENCE DEBUG: Background service worker loaded");
 
-// Built-in AI Processor using Mochi's approach (Gemini Nano via window.ai.prompt)
+// Built-in AI Processor using Mochi's approach (Gemini Nano via self.ai.prompt)
 console.log("SEQUENCE DEBUG: Defining BuiltInAIProcessor class");
 class BuiltInAIProcessor {
   constructor() {
@@ -24,13 +24,13 @@ class BuiltInAIProcessor {
       "SEQUENCE DEBUG: Checking Chrome built-in AI API availability..."
     );
     console.log("SEQUENCE DEBUG: Chrome version:", navigator.userAgent);
-    console.log("SEQUENCE DEBUG: window.ai exists:", "ai" in window);
-    console.log("SEQUENCE DEBUG: window.ai object:", window.ai);
+    console.log("SEQUENCE DEBUG: self.ai exists:", "ai" in self);
+    console.log("SEQUENCE DEBUG: self.ai object:", self.ai);
 
-    // First check if window.ai exists at all
-    if (!("ai" in window)) {
+    // First check if self.ai exists at all
+    if (!("ai" in self)) {
       console.warn(
-        "SEQUENCE DEBUG: window.ai is not available - Chrome built-in AI APIs not supported"
+        "SEQUENCE DEBUG: self.ai is not available - Chrome built-in AI APIs not supported"
       );
       console.warn(
         "SEQUENCE DEBUG: Please enable Chrome flags: chrome://flags/#prompt-api-for-gemini-nano"
@@ -41,10 +41,10 @@ class BuiltInAIProcessor {
     }
 
     console.log(
-      "SEQUENCE DEBUG: window.ai is available, checking individual APIs..."
+      "SEQUENCE DEBUG: self.ai is available, checking individual APIs..."
     );
-    console.log("SEQUENCE DEBUG: Available AI APIs:", Object.keys(window.ai));
-    console.log("SEQUENCE DEBUG: window.ai object:", window.ai);
+    console.log("SEQUENCE DEBUG: Available AI APIs:", Object.keys(self.ai));
+    console.log("SEQUENCE DEBUG: self.ai object:", self.ai);
 
     // Check Prompt API (primary for Gemini Nano - following Mochi's approach)
     console.log("SEQUENCE DEBUG: Checking Prompt API...");
@@ -88,16 +88,16 @@ class BuiltInAIProcessor {
   async checkPromptAPI() {
     console.log("SEQUENCE DEBUG: Testing Prompt API...");
     try {
-      if ("ai" in window && "prompt" in window.ai) {
-        console.log("SEQUENCE DEBUG: window.ai.prompt exists, testing...");
-        const testResult = await window.ai.prompt.prompt({
+      if ("ai" in window && "prompt" in self.ai) {
+        console.log("SEQUENCE DEBUG: self.ai.prompt exists, testing...");
+        const testResult = await self.ai.prompt.prompt({
           prompt: "Hello, this is a test.",
         });
         console.log("SEQUENCE DEBUG: Prompt API (Gemini Nano) available!");
         console.log("SEQUENCE DEBUG: Test result:", testResult);
         return true;
       } else {
-        console.log("SEQUENCE DEBUG: window.ai.prompt does not exist");
+        console.log("SEQUENCE DEBUG: self.ai.prompt does not exist");
         return false;
       }
     } catch (error) {
@@ -111,9 +111,9 @@ class BuiltInAIProcessor {
   async checkSummarizerAPI() {
     console.log("SEQUENCE DEBUG: Testing Summarizer API...");
     try {
-      if ("ai" in navigator && "summarizer" in window.ai) {
-        console.log("SEQUENCE DEBUG: window.ai.summarizer exists, testing...");
-        const testResult = await window.ai.summarizer.summarize({
+      if ("ai" in navigator && "summarizer" in self.ai) {
+        console.log("SEQUENCE DEBUG: self.ai.summarizer exists, testing...");
+        const testResult = await self.ai.summarizer.summarize({
           text: "This is a test.",
           maxLength: 10,
         });
@@ -121,7 +121,7 @@ class BuiltInAIProcessor {
         console.log("SEQUENCE DEBUG: Test result:", testResult);
         return true;
       } else {
-        console.log("SEQUENCE DEBUG: window.ai.summarizer does not exist");
+        console.log("SEQUENCE DEBUG: self.ai.summarizer does not exist");
         return false;
       }
     } catch (error) {
@@ -170,7 +170,7 @@ class BuiltInAIProcessor {
     Return only valid JSON.`;
 
     try {
-      const result = await window.ai.prompt.prompt({
+      const result = await self.ai.prompt.prompt({
         prompt: prompt,
       });
 
@@ -230,7 +230,7 @@ class BuiltInAIProcessor {
     Summary:`;
 
     try {
-      const result = await window.ai.prompt.prompt({
+      const result = await self.ai.prompt.prompt({
         prompt: prompt,
       });
 
@@ -258,7 +258,7 @@ class BuiltInAIProcessor {
     const maxLength = lengthMapping[length] || 150;
 
     try {
-      const result = await window.ai.summarizer.summarize({
+      const result = await self.ai.summarizer.summarize({
         text: text,
         maxLength: maxLength,
       });
@@ -317,7 +317,7 @@ class BuiltInAIProcessor {
     Return only valid JSON.`;
 
     try {
-      const result = await window.ai.prompt.prompt({
+      const result = await self.ai.prompt.prompt({
         prompt: prompt,
       });
 
