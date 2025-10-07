@@ -405,7 +405,7 @@ class BuiltInAIProcessor {
   }
 }
 
-let BuiltInAIProcessor = BuiltInAIProcessor;
+// BuiltInAIProcessor class is now available
 
 // AI Processor classes (included directly to avoid import() issues in service workers)
 class AIProcessor {
