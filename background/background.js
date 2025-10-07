@@ -1,7 +1,10 @@
 // Background service worker for Seequence Chrome extension
 // Handles extension lifecycle and coordinates between components
 
+console.log("SEQUENCE DEBUG: Background service worker loaded");
+
 // Built-in AI Processor using Mochi's approach (Gemini Nano via navigator.ai.prompt)
+console.log("SEQUENCE DEBUG: Defining BuiltInAIProcessor class");
 class BuiltInAIProcessor {
   constructor() {
     this.isAvailable = false;
@@ -907,6 +910,10 @@ class AIProcessorFallback {
 let aiProcessor = null;
 let builtInAIProcessor = null;
 
+// Initialize AI processor immediately when service worker starts
+console.log("SEQUENCE DEBUG: Service worker starting, initializing AI...");
+initializeAI();
+
 // Extension installation/update
 chrome.runtime.onInstalled.addListener((details) => {
   console.log("Seequence extension installed/updated:", details.reason);
@@ -918,7 +925,7 @@ chrome.runtime.onInstalled.addListener((details) => {
     showPrivacyNotice: true,
   });
 
-  // Initialize AI processor
+  // Initialize AI processor (also called on install/update)
   initializeAI();
 });
 
