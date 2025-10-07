@@ -2,12 +2,15 @@
 // Handles extension lifecycle and coordinates between components
 
 // Import built-in AI components
+let BuiltInAIProcessor = null;
 try {
   importScripts("builtin-ai-processor.js");
   console.log("Built-in AI processor loaded successfully");
+  BuiltInAIProcessor = self.BuiltInAIProcessor;
 } catch (error) {
   console.error("Failed to load built-in AI processor:", error);
-  // Continue without built-in AI processor - will use fallback methods
+  console.log("Continuing with fallback AI methods only");
+  // BuiltInAIProcessor will remain null, extension will use fallback methods
 }
 
 // AI Processor classes (included directly to avoid import() issues in service workers)
@@ -495,13 +498,22 @@ chrome.runtime.onInstalled.addListener((details) => {
 // Initialize AI processor
 async function initializeAI() {
   try {
-    // Initialize built-in AI processor first (Chrome 138+ APIs)
-    builtInAIProcessor = new BuiltInAIProcessor();
-    const builtInAvailable = await builtInAIProcessor.checkAvailability();
-    console.log("Built-in AI Processor initialized:", builtInAvailable);
+    // Initialize built-in AI processor first (Chrome 138+ APIs) if available
+    if (BuiltInAIProcessor) {
+      try {
+        builtInAIProcessor = new BuiltInAIProcessor();
+        const builtInAvailable = await builtInAIProcessor.checkAvailability();
+        console.log("Built-in AI Processor initialized:", builtInAvailable);
+      } catch (builtInError) {
+        console.error("Built-in AI processor failed:", builtInError);
+        builtInAIProcessor = null;
+      }
+    } else {
+      console.log("BuiltInAIProcessor class not available");
+    }
 
-    if (builtInAvailable) {
-      console.log("✅ Using built-in AI APIs for hackathon compliance");
+    if (builtInAIProcessor && builtInAIProcessor.isAvailable) {
+      console.log("Using built-in AI APIs for hackathon compliance");
       return;
     }
 
