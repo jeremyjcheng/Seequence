@@ -1,19 +1,19 @@
-// Debug script to check navigator.ai availability
+// Debug script to check window.ai availability
 // Run this in the extension's background script console
 
 console.log("=== NAVIGATOR.AI DEBUG SCRIPT ===");
 console.log("Chrome version:", navigator.userAgent);
-console.log("navigator.ai exists:", "ai" in navigator);
+console.log("window.ai exists:", "ai" in window);
 
-if ("ai" in navigator) {
-  console.log("navigator.ai object:", navigator.ai);
-  console.log("Available AI APIs:", Object.keys(navigator.ai));
+if ("ai" in window) {
+  console.log("window.ai object:", window.ai);
+  console.log("Available AI APIs:", Object.keys(window.ai));
 
   // Test Prompt API
-  if ("prompt" in navigator.ai) {
-    console.log("navigator.ai.prompt exists:", typeof navigator.ai.prompt);
+  if ("prompt" in window.ai) {
+    console.log("window.ai.prompt exists:", typeof window.ai.prompt);
     try {
-      const testResult = await navigator.ai.prompt.prompt({
+      const testResult = await window.ai.prompt.prompt({
         prompt: "Hello, this is a test.",
       });
       console.log("Prompt API test successful:", testResult);
@@ -21,17 +21,14 @@ if ("ai" in navigator) {
       console.log("Prompt API test failed:", error);
     }
   } else {
-    console.log("navigator.ai.prompt does not exist");
+    console.log("window.ai.prompt does not exist");
   }
 
   // Test Summarizer API
-  if ("summarizer" in navigator.ai) {
-    console.log(
-      "navigator.ai.summarizer exists:",
-      typeof navigator.ai.summarizer
-    );
+  if ("summarizer" in window.ai) {
+    console.log("window.ai.summarizer exists:", typeof window.ai.summarizer);
     try {
-      const testResult = await navigator.ai.summarizer.summarize({
+      const testResult = await window.ai.summarizer.summarize({
         text: "This is a test.",
         maxLength: 10,
       });
@@ -40,10 +37,10 @@ if ("ai" in navigator) {
       console.log("Summarizer API test failed:", error);
     }
   } else {
-    console.log("navigator.ai.summarizer does not exist");
+    console.log("window.ai.summarizer does not exist");
   }
 } else {
-  console.log("navigator.ai is not available");
+  console.log("window.ai is not available");
   console.log("This means:");
   console.log("1. Chrome version is too old (< 128)");
   console.log("2. Chrome flags are not enabled");

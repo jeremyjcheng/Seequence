@@ -3,7 +3,7 @@
 
 console.log("SEQUENCE DEBUG: Background service worker loaded");
 
-// Built-in AI Processor using Mochi's approach (Gemini Nano via navigator.ai.prompt)
+// Built-in AI Processor using Mochi's approach (Gemini Nano via window.ai.prompt)
 console.log("SEQUENCE DEBUG: Defining BuiltInAIProcessor class");
 class BuiltInAIProcessor {
   constructor() {
@@ -24,16 +24,13 @@ class BuiltInAIProcessor {
       "SEQUENCE DEBUG: Checking Chrome built-in AI API availability..."
     );
     console.log("SEQUENCE DEBUG: Chrome version:", navigator.userAgent);
-    console.log("SEQUENCE DEBUG: Navigator.ai exists:", "ai" in navigator);
-    console.log(
-      "SEQUENCE DEBUG: navigator object keys:",
-      Object.keys(navigator)
-    );
+    console.log("SEQUENCE DEBUG: window.ai exists:", "ai" in window);
+    console.log("SEQUENCE DEBUG: window.ai object:", window.ai);
 
-    // First check if navigator.ai exists at all
-    if (!("ai" in navigator)) {
+    // First check if window.ai exists at all
+    if (!("ai" in window)) {
       console.warn(
-        "SEQUENCE DEBUG: navigator.ai is not available - Chrome built-in AI APIs not supported"
+        "SEQUENCE DEBUG: window.ai is not available - Chrome built-in AI APIs not supported"
       );
       console.warn(
         "SEQUENCE DEBUG: Please enable Chrome flags: chrome://flags/#prompt-api-for-gemini-nano"
@@ -44,13 +41,10 @@ class BuiltInAIProcessor {
     }
 
     console.log(
-      "SEQUENCE DEBUG: navigator.ai is available, checking individual APIs..."
+      "SEQUENCE DEBUG: window.ai is available, checking individual APIs..."
     );
-    console.log(
-      "SEQUENCE DEBUG: Available AI APIs:",
-      Object.keys(navigator.ai)
-    );
-    console.log("SEQUENCE DEBUG: navigator.ai object:", navigator.ai);
+    console.log("SEQUENCE DEBUG: Available AI APIs:", Object.keys(window.ai));
+    console.log("SEQUENCE DEBUG: window.ai object:", window.ai);
 
     // Check Prompt API (primary for Gemini Nano - following Mochi's approach)
     console.log("SEQUENCE DEBUG: Checking Prompt API...");
@@ -94,16 +88,16 @@ class BuiltInAIProcessor {
   async checkPromptAPI() {
     console.log("SEQUENCE DEBUG: Testing Prompt API...");
     try {
-      if ("ai" in navigator && "prompt" in navigator.ai) {
-        console.log("SEQUENCE DEBUG: navigator.ai.prompt exists, testing...");
-        const testResult = await navigator.ai.prompt.prompt({
+      if ("ai" in window && "prompt" in window.ai) {
+        console.log("SEQUENCE DEBUG: window.ai.prompt exists, testing...");
+        const testResult = await window.ai.prompt.prompt({
           prompt: "Hello, this is a test.",
         });
         console.log("SEQUENCE DEBUG: Prompt API (Gemini Nano) available!");
         console.log("SEQUENCE DEBUG: Test result:", testResult);
         return true;
       } else {
-        console.log("SEQUENCE DEBUG: navigator.ai.prompt does not exist");
+        console.log("SEQUENCE DEBUG: window.ai.prompt does not exist");
         return false;
       }
     } catch (error) {
@@ -117,11 +111,9 @@ class BuiltInAIProcessor {
   async checkSummarizerAPI() {
     console.log("SEQUENCE DEBUG: Testing Summarizer API...");
     try {
-      if ("ai" in navigator && "summarizer" in navigator.ai) {
-        console.log(
-          "SEQUENCE DEBUG: navigator.ai.summarizer exists, testing..."
-        );
-        const testResult = await navigator.ai.summarizer.summarize({
+      if ("ai" in navigator && "summarizer" in window.ai) {
+        console.log("SEQUENCE DEBUG: window.ai.summarizer exists, testing...");
+        const testResult = await window.ai.summarizer.summarize({
           text: "This is a test.",
           maxLength: 10,
         });
@@ -129,7 +121,7 @@ class BuiltInAIProcessor {
         console.log("SEQUENCE DEBUG: Test result:", testResult);
         return true;
       } else {
-        console.log("SEQUENCE DEBUG: navigator.ai.summarizer does not exist");
+        console.log("SEQUENCE DEBUG: window.ai.summarizer does not exist");
         return false;
       }
     } catch (error) {
@@ -178,7 +170,7 @@ class BuiltInAIProcessor {
     Return only valid JSON.`;
 
     try {
-      const result = await navigator.ai.prompt.prompt({
+      const result = await window.ai.prompt.prompt({
         prompt: prompt,
       });
 
@@ -238,7 +230,7 @@ class BuiltInAIProcessor {
     Summary:`;
 
     try {
-      const result = await navigator.ai.prompt.prompt({
+      const result = await window.ai.prompt.prompt({
         prompt: prompt,
       });
 
@@ -266,7 +258,7 @@ class BuiltInAIProcessor {
     const maxLength = lengthMapping[length] || 150;
 
     try {
-      const result = await navigator.ai.summarizer.summarize({
+      const result = await window.ai.summarizer.summarize({
         text: text,
         maxLength: maxLength,
       });
@@ -325,7 +317,7 @@ class BuiltInAIProcessor {
     Return only valid JSON.`;
 
     try {
-      const result = await navigator.ai.prompt.prompt({
+      const result = await window.ai.prompt.prompt({
         prompt: prompt,
       });
 
