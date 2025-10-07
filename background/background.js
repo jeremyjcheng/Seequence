@@ -25,6 +25,10 @@ class BuiltInAIProcessor {
     );
     console.log("SEQUENCE DEBUG: Chrome version:", navigator.userAgent);
     console.log("SEQUENCE DEBUG: Navigator.ai exists:", "ai" in navigator);
+    console.log(
+      "SEQUENCE DEBUG: navigator object keys:",
+      Object.keys(navigator)
+    );
 
     // First check if navigator.ai exists at all
     if (!("ai" in navigator)) {
@@ -46,6 +50,7 @@ class BuiltInAIProcessor {
       "SEQUENCE DEBUG: Available AI APIs:",
       Object.keys(navigator.ai)
     );
+    console.log("SEQUENCE DEBUG: navigator.ai object:", navigator.ai);
 
     // Check Prompt API (primary for Gemini Nano - following Mochi's approach)
     console.log("SEQUENCE DEBUG: Checking Prompt API...");
@@ -946,6 +951,14 @@ async function initializeAI() {
         console.log(
           "SEQUENCE DEBUG: Built-in AI Processor initialized:",
           builtInAvailable
+        );
+        console.log(
+          "SEQUENCE DEBUG: builtInAIProcessor.isAvailable:",
+          builtInAIProcessor.isAvailable
+        );
+        console.log(
+          "SEQUENCE DEBUG: builtInAIProcessor.availableAPIs:",
+          builtInAIProcessor.availableAPIs
         );
 
         if (builtInAIProcessor.isAvailable) {
