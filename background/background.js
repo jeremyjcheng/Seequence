@@ -1088,55 +1088,19 @@ async function initializeAI() {
     }
 
     console.log(
-      "SEQUENCE DEBUG: Built-in AI APIs not available, initializing fallback processors..."
+      "SEQUENCE DEBUG: Chrome built-in AI APIs not available - no fallbacks"
     );
-
-    // Fallback to legacy AI processor if built-in APIs not available
-    console.log("SEQUENCE DEBUG: Trying legacy AI processor...");
-    aiProcessor = new AIProcessor();
-    const isAvailable = await aiProcessor.checkAvailability();
     console.log(
-      "SEQUENCE DEBUG: Legacy AI Processor initialized:",
-      isAvailable
-    );
-
-    if (!isAvailable) {
-      // Fall back to simulated AI processor
-      console.log(
-        "SEQUENCE DEBUG: Legacy AI not available, using fallback processor"
-      );
-      aiProcessor = new AIProcessorFallback();
-      const fallbackAvailable = await aiProcessor.checkAvailability();
-      console.log(
-        "SEQUENCE DEBUG: Fallback AI Processor initialized:",
-        fallbackAvailable
-      );
-    }
-
-    console.log(
-      "SEQUENCE DEBUG: Fallback AI processors initialized successfully"
+      "SEQUENCE DEBUG: Extension requires Chrome 138+ with AI flags enabled"
     );
   } catch (error) {
     console.error("SEQUENCE DEBUG: Error initializing AI processor:", error);
     console.error("SEQUENCE DEBUG: Error details:", error.stack);
 
-    // Try fallback as last resort
-    try {
-      console.log(
-        "SEQUENCE DEBUG: Loading fallback AI processor as last resort"
-      );
-      aiProcessor = new AIProcessorFallback();
-      const fallbackAvailable = await aiProcessor.checkAvailability();
-      console.log(
-        "SEQUENCE DEBUG: Fallback AI Processor loaded:",
-        fallbackAvailable
-      );
-    } catch (fallbackError) {
-      console.error(
-        "SEQUENCE DEBUG: Failed to load fallback AI processor:",
-        fallbackError
-      );
-    }
+    // No fallbacks - Chrome built-in AI only
+    console.log(
+      "SEQUENCE DEBUG: No fallback processors - Chrome built-in AI only"
+    );
   }
 
   console.log("SEQUENCE DEBUG: AI initialization complete");
@@ -1216,14 +1180,20 @@ async function handleTextProcessing(request, sendResponse) {
         });
         return;
       } catch (builtInError) {
-        console.error("SEQUENCE DEBUG: Built-in AI failed:", builtInError);
-        console.log(
-          "SEQUENCE DEBUG: Built-in AI failed, trying server:",
-          builtInError.message
+        console.error(
+          "SEQUENCE DEBUG: Chrome built-in AI failed:",
+          builtInError
         );
+        sendResponse({
+          success: false,
+          error:
+            "Chrome built-in AI processing failed: " + builtInError.message,
+          source: "chrome-builtin-ai-error",
+        });
+        return;
       }
     } else {
-      console.log("SEQUENCE DEBUG: Built-in AI not available");
+      console.log("SEQUENCE DEBUG: Chrome built-in AI not available");
       console.log("SEQUENCE DEBUG: builtInAIProcessor:", builtInAIProcessor);
       if (builtInAIProcessor) {
         console.log(
@@ -1231,69 +1201,15 @@ async function handleTextProcessing(request, sendResponse) {
           builtInAIProcessor.isAvailable
         );
       }
-    }
 
-    // Try server-side processing (hybrid approach)
-    try {
-      console.log("Background: Attempting server-side analysis...");
-      const analysisResponse = await callPythonAnalyzer(text);
-
-      if (analysisResponse.success) {
-        console.log("Background: Using server analysis for diagram generation");
-        const diagramData = convertAnalysisToDiagramData(
-          analysisResponse.analysis,
-          text
-        );
-        // Attach open-intent fields for renderer (no hardcoded taxonomy)
-        if (analysisResponse.open_intent) {
-          diagramData.intent = analysisResponse.open_intent.intent_label;
-          diagramData.intentExplanation =
-            analysisResponse.open_intent.intent_explanation;
-          diagramData.visualization =
-            analysisResponse.open_intent.visualization;
-          diagramData.slots = analysisResponse.open_intent.slots;
-          diagramData.intentConfidence =
-            analysisResponse.open_intent.confidence;
-        }
-        sendResponse({
-          success: true,
-          data: diagramData,
-          source: "server-hybrid",
-        });
-        return;
-      }
-    } catch (analysisError) {
-      console.log(
-        "Background: Server analysis failed, using fallback:",
-        analysisError.message
-      );
-    }
-
-    // Fallback to legacy AI processing
-    if (aiProcessor && aiProcessor.isAvailable) {
-      const diagramData = await aiProcessor.generateDiagramData(
-        text,
-        diagramType
-      );
       sendResponse({
-        success: true,
-        data: diagramData,
-        source: "legacy-ai",
+        success: false,
+        error:
+          "Chrome built-in AI APIs not available. Please ensure Chrome 138+ with AI flags enabled: chrome://flags/#prompt-api-for-gemini-nano",
+        source: "chrome-builtin-ai-unavailable",
       });
       return;
     }
-
-    // No AI available - provide detailed error message
-    const errorMessage =
-      builtInAIProcessor && !builtInAIProcessor.isAvailable
-        ? "Built-in AI APIs not available. Please ensure Chrome 138+ with AI flags enabled, or start the Python server for hybrid processing."
-        : "No AI processing available. Please start the Python server with: ./start-python-summarizer.sh";
-
-    console.error("No AI processing available:", errorMessage);
-    sendResponse({
-      success: false,
-      error: errorMessage,
-    });
   } catch (error) {
     console.error("Error processing text:", error);
     sendResponse({
@@ -1306,23 +1222,19 @@ async function handleTextProcessing(request, sendResponse) {
 // Handle AI availability check
 async function handleAICheck(sendResponse) {
   try {
-    if (!builtInAIProcessor && !aiProcessor) {
+    if (!builtInAIProcessor) {
       await initializeAI();
     }
 
-    // Check built-in AI status first
+    // Only check Chrome built-in AI status
     const builtInStatus = builtInAIProcessor
       ? builtInAIProcessor.getStatus()
       : null;
-    const legacyStatus = aiProcessor ? aiProcessor.getStatus() : null;
 
     const status = {
-      available:
-        (builtInStatus && builtInStatus.available) ||
-        (legacyStatus && legacyStatus.available),
-      builtInAI: builtInStatus,
-      legacyAI: legacyStatus,
-      hybrid: true, // Always true since we have server-side fallback
+      available: builtInStatus && builtInStatus.available,
+      chromeBuiltInAI: builtInStatus,
+      hybrid: false, // No server fallback - Chrome built-in AI only
     };
 
     sendResponse({
@@ -1349,71 +1261,46 @@ async function handleGenerateSummary(request, sendResponse) {
       text.substring(0, 100) + "..."
     );
 
-    // Try built-in Summarizer API first (hackathon requirement)
+    // Only use Chrome's built-in Summarizer API (Gemini Nano)
     if (builtInAIProcessor && builtInAIProcessor.isAvailable) {
       try {
-        console.log("Background: Using built-in Summarizer API...");
+        console.log(
+          "Background: Using Chrome built-in Summarizer API (Gemini Nano)..."
+        );
         const summaryResult = await builtInAIProcessor.generateSummary(
           text,
           length
         );
         console.log(
-          "Background: Built-in summarizer succeeded:",
+          "Background: Chrome built-in summarizer succeeded:",
           summaryResult.summary
         );
         sendResponse({
           success: true,
           summary: summaryResult.summary,
-          source: "builtin-summarizer",
+          source: "chrome-builtin-summarizer",
         });
         return;
       } catch (builtInError) {
         console.log(
-          "Background: Built-in summarizer failed:",
+          "Background: Chrome built-in summarizer failed:",
           builtInError.message
         );
+        sendResponse({
+          success: false,
+          error:
+            "Chrome built-in AI summarization failed: " + builtInError.message,
+          source: "chrome-builtin-ai-error",
+        });
+        return;
       }
-    }
-
-    // Try Python summarizer (hybrid approach)
-    try {
-      console.log("Background: Attempting Python summarizer...");
-      const summary = await callPythonSummarizer(text, length);
-      // Trust the server to handle length appropriately - no client-side truncation
-      console.log("Background: Python summarizer succeeded:", summary);
-      sendResponse({
-        success: true,
-        summary: summary,
-        source: "server-hybrid",
-      });
-      return;
-    } catch (pythonError) {
-      console.log("Background: Python summarizer failed:", pythonError.message);
-
-      // Fallback to legacy AI if available
-      if (aiProcessor && aiProcessor.isAvailable) {
-        try {
-          console.log("Background: Using legacy AI summarizer...");
-          const summary = await aiProcessor.generateSummary(text);
-          sendResponse({
-            success: true,
-            summary: summary,
-            source: "legacy-ai",
-          });
-          return;
-        } catch (legacyError) {
-          console.log(
-            "Background: Legacy AI summarizer failed:",
-            legacyError.message
-          );
-        }
-      }
-
-      // No AI available
+    } else {
+      console.log("Background: Chrome built-in AI not available");
       sendResponse({
         success: false,
         error:
-          "No summarization available. Please ensure Chrome 138+ with built-in AI APIs or start the Python server.",
+          "Chrome built-in AI APIs not available. Please ensure Chrome 138+ with AI flags enabled: chrome://flags/#prompt-api-for-gemini-nano",
+        source: "chrome-builtin-ai-unavailable",
       });
       return;
     }
@@ -1426,94 +1313,7 @@ async function handleGenerateSummary(request, sendResponse) {
   }
 }
 
-// Call Python summarizer via HTTP request to local server
-async function callPythonSummarizer(text, length) {
-  try {
-    console.log(
-      "Background: Attempting to connect to Python summarizer server..."
-    );
-
-    const response = await fetch("http://localhost:8080/summarize", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        text: text,
-        // Let server handle length intelligently based on length_label
-        max_length: 500, // Generous limit, server will respect length_label style
-        // Pass style hint so server can change summary style, not just length
-        length_label: length,
-      }),
-    });
-
-    if (!response.ok) {
-      throw new Error(`HTTP error! status: ${response.status}`);
-    }
-
-    const result = await response.json();
-
-    if (result.success) {
-      console.log(
-        "Background: Python summarizer succeeded. used_gemini=",
-        result.used_gemini,
-        " len=",
-        result.summary_length
-      );
-      console.log(
-        "Background: Summary (preview):",
-        (result.summary || "").slice(0, 120)
-      );
-      return result.summary;
-    } else {
-      throw new Error(result.error || "Unknown error from Python summarizer");
-    }
-  } catch (error) {
-    console.log(
-      "Background: Python summarizer server not available:",
-      error.message
-    );
-    throw error;
-  }
-}
-
-// Call Python analyzer via HTTP request to local server
-async function callPythonAnalyzer(text) {
-  try {
-    console.log(
-      "Background: Attempting to connect to Python analyzer server..."
-    );
-
-    const response = await fetch("http://localhost:8080/analyze", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        text: text,
-      }),
-    });
-
-    if (!response.ok) {
-      throw new Error(`HTTP error! status: ${response.status}`);
-    }
-
-    const result = await response.json();
-
-    if (result.success) {
-      console.log("Background: Python analyzer succeeded:", result.analysis);
-      return result;
-    } else {
-      throw new Error(result.error || "Unknown error from Python analyzer");
-    }
-  } catch (error) {
-    console.log(
-      "Background: Python analyzer server not available:",
-      error.message
-    );
-    throw error;
-  }
-}
+// Server functions removed - using only Chrome built-in AI (Gemini Nano)
 
 // Convert Gemini analysis to diagram data format
 function convertAnalysisToDiagramData(analysis, originalText) {
