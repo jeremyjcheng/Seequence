@@ -1,0 +1,280 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Chrome AI APIs Test</title>
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+        margin: 20px;
+      }
+      .test-section {
+        margin: 20px 0;
+        padding: 15px;
+        border: 1px solid #ccc;
+        border-radius: 5px;
+      }
+      .success {
+        background-color: #d4edda;
+        border-color: #c3e6cb;
+      }
+      .error {
+        background-color: #f8d7da;
+        border-color: #f5c6cb;
+      }
+      .info {
+        background-color: #d1ecf1;
+        border-color: #bee5eb;
+      }
+      button {
+        padding: 10px 15px;
+        margin: 5px;
+        background: #007bff;
+        color: white;
+        border: none;
+        border-radius: 3px;
+        cursor: pointer;
+      }
+      button:hover {
+        background: #0056b3;
+      }
+      pre {
+        background: #f8f9fa;
+        padding: 10px;
+        border-radius: 3px;
+        overflow-x: auto;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>Chrome Built-in AI APIs Test</h1>
+
+    <div class="test-section info">
+      <h3>Chrome Version Info</h3>
+      <p id="chrome-version"></p>
+    </div>
+
+    <div class="test-section" id="navigator-test">
+      <h3>Navigator AI APIs Test</h3>
+      <button onclick="testNavigatorAPIs()">Test Navigator APIs</button>
+      <div id="navigator-results"></div>
+    </div>
+
+    <div class="test-section" id="window-test">
+      <h3>Window AI APIs Test</h3>
+      <button onclick="testWindowAPIs()">Test Window APIs</button>
+      <div id="window-results"></div>
+    </div>
+
+    <div class="test-section" id="self-test">
+      <h3>Self AI APIs Test (Service Worker Context)</h3>
+      <button onclick="testSelfAPIs()">Test Self APIs</button>
+      <div id="self-results"></div>
+    </div>
+
+    <div class="test-section" id="all-properties">
+      <h3>All Available Properties</h3>
+      <button onclick="showAllProperties()">Show All Properties</button>
+      <div id="all-properties-results"></div>
+    </div>
+
+    <script>
+      // Display Chrome version
+      document.getElementById("chrome-version").textContent =
+        navigator.userAgent;
+
+      async function testNavigatorAPIs() {
+        const results = document.getElementById("navigator-results");
+        results.innerHTML = "<p>Testing Navigator APIs...</p>";
+
+        let html = "<h4>Navigator API Test Results:</h4>";
+
+        // Test navigator.summarizer
+        const hasSummarizer = "summarizer" in navigator;
+        html += `<p><strong>navigator.summarizer:</strong> ${
+          hasSummarizer ? "✅ Available" : "❌ Not Available"
+        }</p>`;
+
+        if (hasSummarizer) {
+          try {
+            const result = await navigator.summarizer.summarize({
+              text: "This is a test of the Chrome built-in Summarizer API.",
+              maxLength: 50,
+            });
+            html += `<p><strong>Summarizer Test:</strong> ✅ Success - ${result}</p>`;
+          } catch (error) {
+            html += `<p><strong>Summarizer Test:</strong> ❌ Error - ${error.message}</p>`;
+          }
+        }
+
+        // Test navigator.translator
+        const hasTranslator = "translator" in navigator;
+        html += `<p><strong>navigator.translator:</strong> ${
+          hasTranslator ? "✅ Available" : "❌ Not Available"
+        }</p>`;
+
+        if (hasTranslator) {
+          try {
+            const result = await navigator.translator.translate({
+              text: "Hello world",
+              from: "en",
+              to: "es",
+            });
+            html += `<p><strong>Translator Test:</strong> ✅ Success - ${result}</p>`;
+          } catch (error) {
+            html += `<p><strong>Translator Test:</strong> ❌ Error - ${error.message}</p>`;
+          }
+        }
+
+        // Test other potential AI APIs
+        const aiRelatedKeys = Object.keys(navigator).filter(
+          (key) =>
+            key.toLowerCase().includes("ai") ||
+            key.toLowerCase().includes("summarizer") ||
+            key.toLowerCase().includes("translator") ||
+            key.toLowerCase().includes("gemini") ||
+            key.toLowerCase().includes("prompt")
+        );
+
+        html += `<p><strong>AI-related Navigator Properties:</strong> ${
+          aiRelatedKeys.length > 0 ? aiRelatedKeys.join(", ") : "None found"
+        }</p>`;
+
+        results.innerHTML = html;
+        results.className =
+          hasSummarizer || hasTranslator
+            ? "test-section success"
+            : "test-section error";
+      }
+
+      async function testWindowAPIs() {
+        const results = document.getElementById("window-results");
+        results.innerHTML = "<p>Testing Window APIs...</p>";
+
+        let html = "<h4>Window API Test Results:</h4>";
+
+        // Test window.ai
+        const hasWindowAI = "ai" in window;
+        html += `<p><strong>window.ai:</strong> ${
+          hasWindowAI ? "✅ Available" : "❌ Not Available"
+        }</p>`;
+
+        if (hasWindowAI) {
+          html += `<p><strong>window.ai properties:</strong> ${Object.keys(
+            window.ai
+          ).join(", ")}</p>`;
+
+          // Test window.ai.prompt if available
+          if ("prompt" in window.ai) {
+            try {
+              const result = await window.ai.prompt.prompt({
+                prompt: "Hello, this is a test.",
+              });
+              html += `<p><strong>Prompt Test:</strong> ✅ Success - ${result}</p>`;
+            } catch (error) {
+              html += `<p><strong>Prompt Test:</strong> ❌ Error - ${error.message}</p>`;
+            }
+          }
+        }
+
+        results.innerHTML = html;
+        results.className = hasWindowAI
+          ? "test-section success"
+          : "test-section error";
+      }
+
+      function testSelfAPIs() {
+        const results = document.getElementById("self-results");
+        results.innerHTML =
+          "<p>Testing Self APIs (Service Worker Context)...</p>";
+
+        let html = "<h4>Self API Test Results (Service Worker Context):</h4>";
+
+        // Test self.ai
+        const hasSelfAI = "ai" in self;
+        html += `<p><strong>self.ai:</strong> ${
+          hasSelfAI ? "✅ Available" : "❌ Not Available"
+        }</p>`;
+
+        if (hasSelfAI) {
+          html += `<p><strong>self.ai properties:</strong> ${Object.keys(
+            self.ai
+          ).join(", ")}</p>`;
+        }
+
+        // Test other self properties
+        const aiRelatedSelfKeys = Object.keys(self).filter(
+          (key) =>
+            key.toLowerCase().includes("ai") ||
+            key.toLowerCase().includes("summarizer") ||
+            key.toLowerCase().includes("translator") ||
+            key.toLowerCase().includes("gemini") ||
+            key.toLowerCase().includes("prompt")
+        );
+
+        html += `<p><strong>AI-related Self Properties:</strong> ${
+          aiRelatedSelfKeys.length > 0
+            ? aiRelatedSelfKeys.join(", ")
+            : "None found"
+        }</p>`;
+
+        results.innerHTML = html;
+        results.className = hasSelfAI
+          ? "test-section success"
+          : "test-section error";
+      }
+
+      function showAllProperties() {
+        const results = document.getElementById("all-properties-results");
+
+        let html = "<h4>All Available Properties:</h4>";
+
+        html += "<h5>Navigator Properties:</h5>";
+        html += "<pre>" + Object.keys(navigator).sort().join("\n") + "</pre>";
+
+        html += "<h5>Window Properties (AI-related):</h5>";
+        const windowAIKeys = Object.keys(window).filter(
+          (key) =>
+            key.toLowerCase().includes("ai") ||
+            key.toLowerCase().includes("summarizer") ||
+            key.toLowerCase().includes("translator") ||
+            key.toLowerCase().includes("gemini") ||
+            key.toLowerCase().includes("prompt")
+        );
+        html +=
+          "<pre>" +
+          (windowAIKeys.length > 0
+            ? windowAIKeys.join("\n")
+            : "No AI-related properties found") +
+          "</pre>";
+
+        html += "<h5>Self Properties (AI-related):</h5>";
+        const selfAIKeys = Object.keys(self).filter(
+          (key) =>
+            key.toLowerCase().includes("ai") ||
+            key.toLowerCase().includes("summarizer") ||
+            key.toLowerCase().includes("translator") ||
+            key.toLowerCase().includes("gemini") ||
+            key.toLowerCase().includes("prompt")
+        );
+        html +=
+          "<pre>" +
+          (selfAIKeys.length > 0
+            ? selfAIKeys.join("\n")
+            : "No AI-related properties found") +
+          "</pre>";
+
+        results.innerHTML = html;
+        results.className = "test-section info";
+      }
+
+      // Auto-run tests on page load
+      window.addEventListener("load", () => {
+        testNavigatorAPIs();
+        testWindowAPIs();
+        testSelfAPIs();
+      });
+    </script>
+  </body>
+</html>
