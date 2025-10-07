@@ -1,17 +1,411 @@
 // Background service worker for Seequence Chrome extension
 // Handles extension lifecycle and coordinates between components
 
-// Import built-in AI components
-let BuiltInAIProcessor = null;
-try {
-  importScripts("builtin-ai-processor.js");
-  console.log("Built-in AI processor loaded successfully");
-  BuiltInAIProcessor = self.BuiltInAIProcessor;
-} catch (error) {
-  console.error("Failed to load built-in AI processor:", error);
-  console.log("Continuing with fallback AI methods only");
-  // BuiltInAIProcessor will remain null, extension will use fallback methods
+// Built-in AI Processor using Mochi's approach (Gemini Nano via navigator.ai.prompt)
+class BuiltInAIProcessor {
+  constructor() {
+    this.isAvailable = false;
+    this.availableAPIs = {
+      prompt: false,
+      summarizer: false,
+    };
+    this.performanceMetrics = {
+      promptTime: 0,
+      totalRequests: 0,
+    };
+  }
+
+  // Check availability of built-in AI APIs (following Mochi's pattern)
+  async checkAvailability() {
+    console.log("🔍 Checking Chrome built-in AI API availability...");
+    console.log("Chrome version:", navigator.userAgent);
+    console.log("Navigator.ai exists:", "ai" in navigator);
+
+    // First check if navigator.ai exists at all
+    if (!("ai" in navigator)) {
+      console.warn(
+        "navigator.ai is not available - Chrome built-in AI APIs not supported"
+      );
+      console.warn(
+        "Please enable Chrome flags: chrome://flags/#prompt-api-for-gemini-nano"
+      );
+      this.availableAPIs = { prompt: false, summarizer: false };
+      this.isAvailable = false;
+      return this.availableAPIs;
+    }
+
+    console.log("navigator.ai is available, checking individual APIs...");
+    console.log("Available AI APIs:", Object.keys(navigator.ai));
+
+    // Check Prompt API (primary for Gemini Nano - following Mochi's approach)
+    const promptAvailable = await this.checkPromptAPI();
+
+    // Check Summarizer API (fallback)
+    const summarizerAvailable = await this.checkSummarizerAPI();
+
+    this.availableAPIs = {
+      prompt: promptAvailable,
+      summarizer: summarizerAvailable,
+    };
+
+    this.isAvailable = promptAvailable || summarizerAvailable;
+
+    console.log("Built-in AI API availability:", this.availableAPIs);
+    console.log("Overall availability:", this.isAvailable);
+
+    if (!this.isAvailable) {
+      console.warn("No built-in AI APIs are available.");
+      console.warn(
+        "Please enable Chrome flags and ensure Chrome Dev/Canary ≥128.0.6545.0"
+      );
+      console.warn(
+        "Required flags: chrome://flags/#prompt-api-for-gemini-nano"
+      );
+    } else {
+      console.log("Built-in AI APIs ready for hackathon compliance!");
+    }
+
+    return this.availableAPIs;
+  }
+
+  // Check Prompt API availability (primary API for Gemini Nano)
+  async checkPromptAPI() {
+    try {
+      if ("ai" in navigator && "prompt" in navigator.ai) {
+        const testResult = await navigator.ai.prompt.prompt({
+          prompt: "Hello, this is a test.",
+        });
+        console.log("Prompt API (Gemini Nano) available");
+        return true;
+      }
+    } catch (error) {
+      console.log("Prompt API not available:", error.message);
+    }
+    return false;
+  }
+
+  // Check Summarizer API availability (fallback)
+  async checkSummarizerAPI() {
+    try {
+      if ("ai" in navigator && "summarizer" in navigator.ai) {
+        const testResult = await navigator.ai.summarizer.summarize({
+          text: "This is a test.",
+          maxLength: 10,
+        });
+        console.log("Summarizer API available");
+        return true;
+      }
+    } catch (error) {
+      console.log("Summarizer API not available:", error.message);
+    }
+    return false;
+  }
+
+  // Analyze text structure using built-in AI APIs (following Mochi's pattern)
+  async analyzeTextStructure(text) {
+    const startTime = performance.now();
+
+    try {
+      // Use Prompt API for content analysis (primary method like Mochi)
+      if (this.availableAPIs.prompt) {
+        const analysis = await this.analyzeWithPromptAPI(text);
+        this.performanceMetrics.promptTime += performance.now() - startTime;
+        this.performanceMetrics.totalRequests++;
+        return analysis;
+      }
+
+      // Fallback to heuristic analysis
+      return await this.analyzeHeuristic(text);
+    } catch (error) {
+      console.error("Error in text structure analysis:", error);
+      return await this.analyzeHeuristic(text);
+    }
+  }
+
+  // Analyze text using Prompt API (following Mochi's approach)
+  async analyzeWithPromptAPI(text) {
+    const prompt = `Analyze this text and extract its structure for diagram generation. Return a JSON object with:
+    - "type": the content type (causal, sequential, comparative, hierarchical, narrative)
+    - "mainTopic": the main subject (max 50 chars)
+    - "keyPoints": array of main ideas (max 5, each max 100 chars)
+    - "relationships": array of relationships between points
+    - "structure": the overall organization pattern
+    - "confidence": analysis confidence (0-1)
+
+    Text: "${text.substring(0, 2000)}"
+
+    Return only valid JSON.`;
+
+    try {
+      const result = await navigator.ai.prompt.prompt({
+        prompt: prompt,
+      });
+
+      const analysis = JSON.parse(result);
+      analysis.source = "builtin-prompt-gemini";
+      console.log("Text analysis completed using Gemini Nano");
+      return analysis;
+    } catch (error) {
+      console.error("Prompt API analysis failed:", error);
+      throw error;
+    }
+  }
+
+  // Generate summary using built-in AI APIs (following Mochi's pattern)
+  async generateSummary(text, length = "short") {
+    const startTime = performance.now();
+
+    try {
+      // Use Prompt API for summarization (primary method like Mochi)
+      if (this.availableAPIs.prompt) {
+        const summary = await this.summarizeWithPromptAPI(text, length);
+        this.performanceMetrics.promptTime += performance.now() - startTime;
+        this.performanceMetrics.totalRequests++;
+        return summary;
+      }
+
+      // Fallback to Summarizer API
+      if (this.availableAPIs.summarizer) {
+        const summary = await this.summarizeWithBuiltInAPI(text, length);
+        this.performanceMetrics.promptTime += performance.now() - startTime;
+        this.performanceMetrics.totalRequests++;
+        return summary;
+      }
+
+      // Fallback to heuristic summarization
+      return await this.summarizeHeuristic(text, length);
+    } catch (error) {
+      console.error("Error in summary generation:", error);
+      return await this.summarizeHeuristic(text, length);
+    }
+  }
+
+  // Summarize using Prompt API (following Mochi's approach)
+  async summarizeWithPromptAPI(text, length) {
+    const lengthMapping = {
+      short: "2-3 sentences",
+      medium: "4-5 sentences",
+      long: "6-8 sentences",
+    };
+
+    const lengthHint = lengthMapping[length] || "2-3 sentences";
+
+    const prompt = `Summarize the following text in ${lengthHint}. Keep the key information and main points:
+
+    Text: "${text}"
+
+    Summary:`;
+
+    try {
+      const result = await navigator.ai.prompt.prompt({
+        prompt: prompt,
+      });
+
+      return {
+        summary: result,
+        originalLength: text.length,
+        summaryLength: result.length,
+        compressionRatio: result.length / text.length,
+        source: "builtin-prompt-gemini",
+      };
+    } catch (error) {
+      console.error("Prompt API summarization failed:", error);
+      throw error;
+    }
+  }
+
+  // Summarize using built-in Summarizer API (fallback)
+  async summarizeWithBuiltInAPI(text, length) {
+    const lengthMapping = {
+      short: 100,
+      medium: 200,
+      long: 300,
+    };
+
+    const maxLength = lengthMapping[length] || 150;
+
+    try {
+      const result = await navigator.ai.summarizer.summarize({
+        text: text,
+        maxLength: maxLength,
+      });
+
+      return {
+        summary: result,
+        originalLength: text.length,
+        summaryLength: result.length,
+        compressionRatio: result.length / text.length,
+        source: "builtin-summarizer",
+      };
+    } catch (error) {
+      console.error("Built-in summarizer failed:", error);
+      throw error;
+    }
+  }
+
+  // Generate diagram data using built-in AI APIs (following Mochi's pattern)
+  async generateDiagramData(text, diagramType = "auto") {
+    try {
+      // First analyze the text structure
+      const analysis = await this.analyzeTextStructure(text);
+
+      // Use Prompt API to generate diagram data (primary method like Mochi)
+      if (this.availableAPIs.prompt) {
+        const diagramData = await this.generateDiagramWithPromptAPI(
+          analysis,
+          diagramType
+        );
+        return diagramData;
+      }
+
+      // Fallback to heuristic diagram generation
+      return await this.generateDiagramHeuristic(analysis, diagramType);
+    } catch (error) {
+      console.error("Error in diagram generation:", error);
+      return await this.generateDiagramHeuristic(
+        await this.analyzeHeuristic(text),
+        diagramType
+      );
+    }
+  }
+
+  // Generate diagram data using Prompt API (following Mochi's approach)
+  async generateDiagramWithPromptAPI(analysis, diagramType) {
+    const prompt = `Based on the analysis, create a diagram data structure for a ${diagramType}. 
+    Return a JSON object with:
+    - "nodes": array of nodes with id, label, type, and content
+    - "edges": array of connections with source, target, and label
+    - "layout": suggested layout type
+    - "title": diagram title
+
+    Analysis: ${JSON.stringify(analysis)}
+    Diagram Type: ${diagramType}
+
+    Return only valid JSON.`;
+
+    try {
+      const result = await navigator.ai.prompt.prompt({
+        prompt: prompt,
+      });
+
+      const diagramData = JSON.parse(result);
+      diagramData.source = "builtin-prompt-gemini";
+      console.log("✅ Diagram data generated using Gemini Nano");
+      return diagramData;
+    } catch (error) {
+      console.error("Prompt API diagram generation failed:", error);
+      throw error;
+    }
+  }
+
+  // Heuristic text analysis fallback
+  async analyzeHeuristic(text) {
+    const words = text.toLowerCase().split(/\s+/);
+    const sentences = text.split(/[.!?]+/).filter((s) => s.trim().length > 0);
+
+    // Simple content type detection
+    let type = "narrative";
+    if (words.some((w) => ["first", "second", "then", "next"].includes(w))) {
+      type = "sequential";
+    } else if (
+      words.some((w) => ["because", "therefore", "causes"].includes(w))
+    ) {
+      type = "causal";
+    } else if (
+      words.some((w) => ["versus", "compared", "different"].includes(w))
+    ) {
+      type = "comparative";
+    }
+
+    const keyPoints = sentences.slice(0, 5).map((s, index) => ({
+      text: s.trim(),
+      order: index + 1,
+      type: "point",
+    }));
+
+    const relationships = [];
+    for (let i = 0; i < keyPoints.length - 1; i++) {
+      relationships.push({
+        from: i,
+        to: i + 1,
+        type: "related",
+        label: "→",
+      });
+    }
+
+    return {
+      type,
+      confidence: 0.5,
+      mainTopic: sentences[0]?.substring(0, 50) + "..." || "Main Topic",
+      keyPoints,
+      relationships,
+      structure: type,
+      source: "heuristic",
+    };
+  }
+
+  // Heuristic summarization fallback
+  async summarizeHeuristic(text, length) {
+    const sentences = text.split(/[.!?]+/).filter((s) => s.trim().length > 0);
+    const lengthMapping = {
+      short: 2,
+      medium: 3,
+      long: 4,
+    };
+
+    const summaryLength = lengthMapping[length] || 2;
+    const summary = sentences.slice(0, summaryLength).join(". ") + ".";
+
+    return {
+      summary,
+      originalLength: text.length,
+      summaryLength: summary.length,
+      compressionRatio: summary.length / text.length,
+      source: "heuristic",
+    };
+  }
+
+  // Heuristic diagram generation fallback
+  async generateDiagramHeuristic(analysis, diagramType) {
+    const nodes = analysis.keyPoints.map((point, index) => ({
+      id: `node_${index}`,
+      label:
+        point.text.substring(0, 30) + (point.text.length > 30 ? "..." : ""),
+      type: "concept",
+      content: point.text,
+      order: index + 1,
+    }));
+
+    const edges = analysis.relationships.map((rel, index) => ({
+      id: `edge_${index}`,
+      source: `node_${rel.from}`,
+      target: `node_${rel.to}`,
+      label: rel.label,
+      type: rel.type,
+    }));
+
+    return {
+      title: analysis.mainTopic,
+      layout: analysis.type === "sequential" ? "timeline" : "flowchart",
+      nodes,
+      edges,
+      type: analysis.type,
+      source: "heuristic",
+    };
+  }
+
+  // Get processor status
+  getStatus() {
+    return {
+      available: this.isAvailable,
+      availableAPIs: this.availableAPIs,
+      performance: this.performanceMetrics,
+      source: "builtin-apis-gemini",
+    };
+  }
 }
+
+let BuiltInAIProcessor = BuiltInAIProcessor;
 
 // AI Processor classes (included directly to avoid import() issues in service workers)
 class AIProcessor {

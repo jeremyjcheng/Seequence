@@ -49,6 +49,21 @@
     <div class="test-content">
       <h2>Instructions</h2>
       <ol>
+        <li>
+          <strong>Enable Chrome AI flags first:</strong>
+          <ul>
+            <li>
+              Go to
+              <code>chrome://flags/#optimization-guide-on-device-model</code> →
+              "Enabled BypassPerfRequirement"
+            </li>
+            <li>
+              Go to <code>chrome://flags/#prompt-api-for-gemini-nano</code> →
+              "Enabled"
+            </li>
+            <li>Relaunch Chrome</li>
+          </ul>
+        </li>
         <li>Select the text below (highlight it with your mouse)</li>
         <li>Click the Seequence extension icon in the toolbar</li>
         <li>Click "Create Diagram" in the popup</li>
@@ -130,16 +145,19 @@
 
         log("Chrome version: " + version);
 
-        if (version >= 138) {
-          log("✅ Chrome 138+ - Built-in AI APIs should be available");
+        if (version >= 128) {
+          log("✅ Chrome 128+ - Gemini Nano should be available");
           log("Check if navigator.ai exists: " + ("ai" in navigator));
+          if ("ai" in navigator) {
+            log("Available AI APIs: " + Object.keys(navigator.ai).join(", "));
+          }
         } else {
           log(
             "⚠️ Chrome version " +
               version +
-              " - Built-in AI APIs require Chrome 138+"
+              " - Gemini Nano requires Chrome 128+ (Dev/Canary)"
           );
-          log("Extension will use fallback AI methods");
+          log("Please install Chrome Dev/Canary channel");
         }
       }
 
