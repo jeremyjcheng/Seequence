@@ -17,30 +17,39 @@ class BuiltInAIProcessor {
 
   // Check availability of built-in AI APIs (following Mochi's pattern)
   async checkAvailability() {
-    console.log("🔍 Checking Chrome built-in AI API availability...");
-    console.log("Chrome version:", navigator.userAgent);
-    console.log("Navigator.ai exists:", "ai" in navigator);
+    console.log(
+      "SEQUENCE DEBUG: Checking Chrome built-in AI API availability..."
+    );
+    console.log("SEQUENCE DEBUG: Chrome version:", navigator.userAgent);
+    console.log("SEQUENCE DEBUG: Navigator.ai exists:", "ai" in navigator);
 
     // First check if navigator.ai exists at all
     if (!("ai" in navigator)) {
       console.warn(
-        "navigator.ai is not available - Chrome built-in AI APIs not supported"
+        "SEQUENCE DEBUG: navigator.ai is not available - Chrome built-in AI APIs not supported"
       );
       console.warn(
-        "Please enable Chrome flags: chrome://flags/#prompt-api-for-gemini-nano"
+        "SEQUENCE DEBUG: Please enable Chrome flags: chrome://flags/#prompt-api-for-gemini-nano"
       );
       this.availableAPIs = { prompt: false, summarizer: false };
       this.isAvailable = false;
       return this.availableAPIs;
     }
 
-    console.log("navigator.ai is available, checking individual APIs...");
-    console.log("Available AI APIs:", Object.keys(navigator.ai));
+    console.log(
+      "SEQUENCE DEBUG: navigator.ai is available, checking individual APIs..."
+    );
+    console.log(
+      "SEQUENCE DEBUG: Available AI APIs:",
+      Object.keys(navigator.ai)
+    );
 
     // Check Prompt API (primary for Gemini Nano - following Mochi's approach)
+    console.log("SEQUENCE DEBUG: Checking Prompt API...");
     const promptAvailable = await this.checkPromptAPI();
 
     // Check Summarizer API (fallback)
+    console.log("SEQUENCE DEBUG: Checking Summarizer API...");
     const summarizerAvailable = await this.checkSummarizerAPI();
 
     this.availableAPIs = {
@@ -50,19 +59,24 @@ class BuiltInAIProcessor {
 
     this.isAvailable = promptAvailable || summarizerAvailable;
 
-    console.log("Built-in AI API availability:", this.availableAPIs);
-    console.log("Overall availability:", this.isAvailable);
+    console.log(
+      "SEQUENCE DEBUG: Built-in AI API availability:",
+      this.availableAPIs
+    );
+    console.log("SEQUENCE DEBUG: Overall availability:", this.isAvailable);
 
     if (!this.isAvailable) {
-      console.warn("No built-in AI APIs are available.");
+      console.warn("SEQUENCE DEBUG: No built-in AI APIs are available.");
       console.warn(
-        "Please enable Chrome flags and ensure Chrome Dev/Canary ≥128.0.6545.0"
+        "SEQUENCE DEBUG: Please enable Chrome flags and ensure Chrome Dev/Canary ≥128.0.6545.0"
       );
       console.warn(
-        "Required flags: chrome://flags/#prompt-api-for-gemini-nano"
+        "SEQUENCE DEBUG: Required flags: chrome://flags/#prompt-api-for-gemini-nano"
       );
     } else {
-      console.log("Built-in AI APIs ready for hackathon compliance!");
+      console.log(
+        "SEQUENCE DEBUG: Built-in AI APIs ready for hackathon compliance!"
+      );
     }
 
     return this.availableAPIs;
@@ -70,33 +84,52 @@ class BuiltInAIProcessor {
 
   // Check Prompt API availability (primary API for Gemini Nano)
   async checkPromptAPI() {
+    console.log("SEQUENCE DEBUG: Testing Prompt API...");
     try {
       if ("ai" in navigator && "prompt" in navigator.ai) {
+        console.log("SEQUENCE DEBUG: navigator.ai.prompt exists, testing...");
         const testResult = await navigator.ai.prompt.prompt({
           prompt: "Hello, this is a test.",
         });
-        console.log("Prompt API (Gemini Nano) available");
+        console.log("SEQUENCE DEBUG: Prompt API (Gemini Nano) available!");
+        console.log("SEQUENCE DEBUG: Test result:", testResult);
         return true;
+      } else {
+        console.log("SEQUENCE DEBUG: navigator.ai.prompt does not exist");
+        return false;
       }
     } catch (error) {
-      console.log("Prompt API not available:", error.message);
+      console.log("SEQUENCE DEBUG: Prompt API not available:", error.message);
+      console.log("SEQUENCE DEBUG: Error details:", error);
     }
     return false;
   }
 
   // Check Summarizer API availability (fallback)
   async checkSummarizerAPI() {
+    console.log("SEQUENCE DEBUG: Testing Summarizer API...");
     try {
       if ("ai" in navigator && "summarizer" in navigator.ai) {
+        console.log(
+          "SEQUENCE DEBUG: navigator.ai.summarizer exists, testing..."
+        );
         const testResult = await navigator.ai.summarizer.summarize({
           text: "This is a test.",
           maxLength: 10,
         });
-        console.log("Summarizer API available");
+        console.log("SEQUENCE DEBUG: Summarizer API available!");
+        console.log("SEQUENCE DEBUG: Test result:", testResult);
         return true;
+      } else {
+        console.log("SEQUENCE DEBUG: navigator.ai.summarizer does not exist");
+        return false;
       }
     } catch (error) {
-      console.log("Summarizer API not available:", error.message);
+      console.log(
+        "SEQUENCE DEBUG: Summarizer API not available:",
+        error.message
+      );
+      console.log("SEQUENCE DEBUG: Error details:", error);
     }
     return false;
   }
@@ -290,7 +323,7 @@ class BuiltInAIProcessor {
 
       const diagramData = JSON.parse(result);
       diagramData.source = "builtin-prompt-gemini";
-      console.log("✅ Diagram data generated using Gemini Nano");
+      console.log("Diagram data generated using Gemini Nano");
       return diagramData;
     } catch (error) {
       console.error("Prompt API diagram generation failed:", error);
@@ -891,59 +924,100 @@ chrome.runtime.onInstalled.addListener((details) => {
 
 // Initialize AI processor
 async function initializeAI() {
+  console.log("SEQUENCE DEBUG: Starting AI initialization...");
+
   try {
     // Initialize built-in AI processor first (Chrome 138+ APIs) if available
     if (BuiltInAIProcessor) {
+      console.log("SEQUENCE DEBUG: BuiltInAIProcessor class is available");
       try {
+        console.log("SEQUENCE DEBUG: Creating BuiltInAIProcessor instance...");
         builtInAIProcessor = new BuiltInAIProcessor();
+
+        console.log("SEQUENCE DEBUG: Checking built-in AI availability...");
         const builtInAvailable = await builtInAIProcessor.checkAvailability();
-        console.log("Built-in AI Processor initialized:", builtInAvailable);
+        console.log(
+          "SEQUENCE DEBUG: Built-in AI Processor initialized:",
+          builtInAvailable
+        );
+
+        if (builtInAIProcessor.isAvailable) {
+          console.log("SEQUENCE DEBUG: Built-in AI APIs are AVAILABLE!");
+          console.log(
+            "SEQUENCE DEBUG: Available APIs:",
+            builtInAIProcessor.availableAPIs
+          );
+          console.log(
+            "SEQUENCE DEBUG: Using built-in AI APIs for hackathon compliance"
+          );
+          return;
+        } else {
+          console.log("SEQUENCE DEBUG: Built-in AI APIs are NOT available");
+        }
       } catch (builtInError) {
-        console.error("Built-in AI processor failed:", builtInError);
+        console.error(
+          "SEQUENCE DEBUG: Built-in AI processor failed:",
+          builtInError
+        );
         builtInAIProcessor = null;
       }
     } else {
-      console.log("BuiltInAIProcessor class not available");
-    }
-
-    if (builtInAIProcessor && builtInAIProcessor.isAvailable) {
-      console.log("Using built-in AI APIs for hackathon compliance");
-      return;
+      console.log("SEQUENCE DEBUG: BuiltInAIProcessor class not available");
     }
 
     console.log(
-      "⚠️ Built-in AI APIs not available, initializing fallback processors..."
+      "SEQUENCE DEBUG: Built-in AI APIs not available, initializing fallback processors..."
     );
 
     // Fallback to legacy AI processor if built-in APIs not available
-    console.log("Trying legacy AI processor...");
+    console.log("SEQUENCE DEBUG: Trying legacy AI processor...");
     aiProcessor = new AIProcessor();
     const isAvailable = await aiProcessor.checkAvailability();
-    console.log("Legacy AI Processor initialized:", isAvailable);
+    console.log(
+      "SEQUENCE DEBUG: Legacy AI Processor initialized:",
+      isAvailable
+    );
 
     if (!isAvailable) {
       // Fall back to simulated AI processor
-      console.log("Legacy AI not available, using fallback processor");
+      console.log(
+        "SEQUENCE DEBUG: Legacy AI not available, using fallback processor"
+      );
       aiProcessor = new AIProcessorFallback();
       const fallbackAvailable = await aiProcessor.checkAvailability();
-      console.log("Fallback AI Processor initialized:", fallbackAvailable);
+      console.log(
+        "SEQUENCE DEBUG: Fallback AI Processor initialized:",
+        fallbackAvailable
+      );
     }
 
-    console.log("✅ Fallback AI processors initialized successfully");
+    console.log(
+      "SEQUENCE DEBUG: Fallback AI processors initialized successfully"
+    );
   } catch (error) {
-    console.error("❌ Error initializing AI processor:", error);
-    console.error("Error details:", error.stack);
+    console.error("SEQUENCE DEBUG: Error initializing AI processor:", error);
+    console.error("SEQUENCE DEBUG: Error details:", error.stack);
 
     // Try fallback as last resort
     try {
-      console.log("Loading fallback AI processor as last resort");
+      console.log(
+        "SEQUENCE DEBUG: Loading fallback AI processor as last resort"
+      );
       aiProcessor = new AIProcessorFallback();
       const fallbackAvailable = await aiProcessor.checkAvailability();
-      console.log("Fallback AI Processor loaded:", fallbackAvailable);
+      console.log(
+        "SEQUENCE DEBUG: Fallback AI Processor loaded:",
+        fallbackAvailable
+      );
     } catch (fallbackError) {
-      console.error("Failed to load fallback AI processor:", fallbackError);
+      console.error(
+        "SEQUENCE DEBUG: Failed to load fallback AI processor:",
+        fallbackError
+      );
     }
   }
+
+  console.log("SEQUENCE DEBUG: AI initialization complete");
 }
 
 // Handle extension icon click (though we're using popup, this is here for future use)
@@ -978,22 +1052,40 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
 
 // Handle AI text processing
 async function handleTextProcessing(request, sendResponse) {
+  console.log("SEQUENCE DEBUG: Text processing request received");
+  console.log("SEQUENCE DEBUG: Request:", request);
+
   try {
     // Initialize processors if needed
     if (!builtInAIProcessor && !aiProcessor) {
+      console.log(
+        "SEQUENCE DEBUG: No processors initialized, calling initializeAI()"
+      );
       await initializeAI();
     }
 
     const { text, diagramType } = request;
+    console.log("SEQUENCE DEBUG: Processing text length:", text.length);
+    console.log("SEQUENCE DEBUG: Diagram type:", diagramType);
 
     // Try built-in AI APIs first (hackathon requirement)
     if (builtInAIProcessor && builtInAIProcessor.isAvailable) {
+      console.log("SEQUENCE DEBUG: Using built-in AI APIs for processing...");
+      console.log(
+        "SEQUENCE DEBUG: Built-in AI status:",
+        builtInAIProcessor.getStatus()
+      );
+
       try {
-        console.log("Background: Using built-in AI APIs for processing...");
+        console.log(
+          "SEQUENCE DEBUG: Calling builtInAIProcessor.generateDiagramData()"
+        );
         const diagramData = await builtInAIProcessor.generateDiagramData(
           text,
           diagramType
         );
+        console.log("SEQUENCE DEBUG: Built-in AI processing successful!");
+        console.log("SEQUENCE DEBUG: Generated diagram data:", diagramData);
 
         sendResponse({
           success: true,
@@ -1002,9 +1094,19 @@ async function handleTextProcessing(request, sendResponse) {
         });
         return;
       } catch (builtInError) {
+        console.error("SEQUENCE DEBUG: Built-in AI failed:", builtInError);
         console.log(
-          "Background: Built-in AI failed, trying server:",
+          "SEQUENCE DEBUG: Built-in AI failed, trying server:",
           builtInError.message
+        );
+      }
+    } else {
+      console.log("SEQUENCE DEBUG: Built-in AI not available");
+      console.log("SEQUENCE DEBUG: builtInAIProcessor:", builtInAIProcessor);
+      if (builtInAIProcessor) {
+        console.log(
+          "SEQUENCE DEBUG: builtInAIProcessor.isAvailable:",
+          builtInAIProcessor.isAvailable
         );
       }
     }
@@ -1065,7 +1167,7 @@ async function handleTextProcessing(request, sendResponse) {
         ? "Built-in AI APIs not available. Please ensure Chrome 138+ with AI flags enabled, or start the Python server for hybrid processing."
         : "No AI processing available. Please start the Python server with: ./start-python-summarizer.sh";
 
-    console.error("❌ No AI processing available:", errorMessage);
+    console.error("No AI processing available:", errorMessage);
     sendResponse({
       success: false,
       error: errorMessage,
