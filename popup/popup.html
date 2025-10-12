@@ -29,6 +29,39 @@
           <div class="selected-text-preview">
             <p id="selected-text"></p>
           </div>
+
+          <!-- Rewriting Options -->
+          <div class="rewriting-options">
+            <div class="rewriting-category">
+              <span class="rewriting-label">Rewriting style:</span>
+              <div class="rewriting-category-segmented" id="rewriting-category">
+                <button
+                  class="category-button active"
+                  data-category="textClarity"
+                >
+                  Clarity
+                </button>
+                <button class="category-button" data-category="textFocus">
+                  Focus
+                </button>
+                <button class="category-button" data-category="textPattern">
+                  Pattern
+                </button>
+              </div>
+            </div>
+
+            <div class="rewriting-level">
+              <span class="rewriting-label">Rewriting level:</span>
+              <div class="rewriting-level-segmented" id="rewriting-level">
+                <button class="level-button active" data-level="1">1</button>
+                <button class="level-button" data-level="2">2</button>
+                <button class="level-button" data-level="3">3</button>
+                <button class="level-button" data-level="4">4</button>
+                <button class="level-button" data-level="5">5</button>
+              </div>
+            </div>
+          </div>
+
           <div class="summary-length">
             <span class="summary-length-label">Summary length:</span>
             <div class="summary-length-segmented" id="summary-length">
@@ -39,7 +72,11 @@
               <button class="length-button" data-length="long">Long</button>
             </div>
           </div>
+
           <div class="button-group">
+            <button id="rewrite-text" class="primary-button">
+              Rewrite Text
+            </button>
             <button id="create-diagram" class="primary-button">
               Create Diagram
             </button>
@@ -52,6 +89,30 @@
           <h3>Processing...</h3>
           <p>Analyzing text structure and generating diagram...</p>
           <div class="loading-spinner"></div>
+        </div>
+
+        <div id="rewritten-text" class="state-message hidden">
+          <div class="icon">✏️</div>
+          <h3>Rewritten Text</h3>
+          <div class="rewritten-text-content">
+            <div class="rewritten-text-header">
+              <span class="rewriting-info" id="rewriting-info"
+                >Clarity Level 3</span
+              >
+              <button id="copy-rewritten" class="control-button">Copy</button>
+            </div>
+            <div class="rewritten-text-body">
+              <p id="rewritten-text-content"></p>
+            </div>
+          </div>
+          <div class="button-group">
+            <button id="create-diagram-from-rewritten" class="primary-button">
+              Create Diagram
+            </button>
+            <button id="back-to-selection" class="secondary-button">
+              Back
+            </button>
+          </div>
         </div>
 
         <div id="diagram-view" class="state-message hidden">
@@ -106,6 +167,9 @@
     <script src="d3.min.js"></script>
     <!-- Diagram renderer (ELK layout engine not available, will use fallback) -->
     <script src="../diagrams/diagram-renderer.js"></script>
+    <!-- AI Client and System Prompts -->
+    <script type="module" src="../src/ai/aiClient.js"></script>
+    <script type="module" src="../src/ai/systemPrompts.js"></script>
     <script src="popup.js"></script>
   </body>
 </html>

@@ -1,0 +1,269 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Test AI Client - Seequence</title>
+    <style>
+      body {
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+          sans-serif;
+        max-width: 800px;
+        margin: 0 auto;
+        padding: 20px;
+        line-height: 1.6;
+      }
+      .test-section {
+        margin: 20px 0;
+        padding: 20px;
+        border: 1px solid #e1e5e9;
+        border-radius: 8px;
+        background: #f8f9fa;
+      }
+      .test-button {
+        background: #0066cc;
+        color: white;
+        border: none;
+        border-radius: 6px;
+        padding: 10px 20px;
+        font-size: 14px;
+        font-weight: 500;
+        cursor: pointer;
+        margin: 5px;
+      }
+      .test-button:hover {
+        background: #0052a3;
+      }
+      .test-button:disabled {
+        background: #ccc;
+        cursor: not-allowed;
+      }
+      .result {
+        margin-top: 10px;
+        padding: 10px;
+        background: white;
+        border: 1px solid #dee2e6;
+        border-radius: 4px;
+        white-space: pre-wrap;
+      }
+      .error {
+        background: #f8d7da;
+        border-color: #f5c6cb;
+        color: #721c24;
+      }
+      .success {
+        background: #d4edda;
+        border-color: #c3e6cb;
+        color: #155724;
+      }
+      textarea {
+        width: 100%;
+        height: 100px;
+        margin: 10px 0;
+        padding: 10px;
+        border: 1px solid #dee2e6;
+        border-radius: 4px;
+        font-family: inherit;
+      }
+      select,
+      input {
+        margin: 5px;
+        padding: 5px;
+        border: 1px solid #dee2e6;
+        border-radius: 4px;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>Seequence AI Client Test</h1>
+    <p>
+      This page tests the AI Client functionality for the Seequence Chrome
+      extension.
+    </p>
+
+    <div class="test-section">
+      <h3>Test Text Input</h3>
+      <textarea
+        id="testText"
+        placeholder="Enter text to test rewriting and summarization..."
+      >
+The implementation of artificial intelligence in modern software development has revolutionized the way we approach complex problem-solving. Machine learning algorithms, particularly deep learning models, have demonstrated remarkable capabilities in pattern recognition, natural language processing, and predictive analytics. These technologies enable developers to create more intelligent and adaptive systems that can learn from data and improve their performance over time.</textarea
+      >
+    </div>
+
+    <div class="test-section">
+      <h3>AI Client Status</h3>
+      <button class="test-button" onclick="checkAIClientStatus()">
+        Check AI Client Status
+      </button>
+      <div id="statusResult" class="result" style="display: none"></div>
+    </div>
+
+    <div class="test-section">
+      <h3>Text Rewriting Test</h3>
+      <div>
+        <label>Category:</label>
+        <select id="rewriteCategory">
+          <option value="textClarity">Clarity</option>
+          <option value="textFocus">Focus</option>
+          <option value="textPattern">Pattern</option>
+        </select>
+        <label>Level:</label>
+        <select id="rewriteLevel">
+          <option value="1">1</option>
+          <option value="2">2</option>
+          <option value="3" selected>3</option>
+          <option value="4">4</option>
+          <option value="5">5</option>
+        </select>
+      </div>
+      <button class="test-button" onclick="testRewriteText()">
+        Test Rewrite Text
+      </button>
+      <div id="rewriteResult" class="result" style="display: none"></div>
+    </div>
+
+    <div class="test-section">
+      <h3>Text Summarization Test</h3>
+      <div>
+        <label>Style:</label>
+        <select id="summaryStyle">
+          <option value="short">Short</option>
+          <option value="medium" selected>Medium</option>
+          <option value="long">Long</option>
+        </select>
+      </div>
+      <button class="test-button" onclick="testSummarizeText()">
+        Test Summarize Text
+      </button>
+      <div id="summaryResult" class="result" style="display: none"></div>
+    </div>
+
+    <div class="test-section">
+      <h3>Structure Detection Test</h3>
+      <button class="test-button" onclick="testDetectStructure()">
+        Test Detect Structure
+      </button>
+      <div id="structureResult" class="result" style="display: none"></div>
+    </div>
+
+    <script type="module">
+      let aiClient = null;
+
+      // Initialize AI Client
+      async function initAIClient() {
+        try {
+          const { default: AIClientClass } = await import(
+            "./src/ai/aiClient.js"
+          );
+          aiClient = new AIClientClass();
+          await aiClient.checkAvailability();
+          console.log("AI Client initialized successfully");
+          return true;
+        } catch (error) {
+          console.error("Failed to initialize AI Client:", error);
+          return false;
+        }
+      }
+
+      // Initialize on page load
+      initAIClient();
+
+      // Global functions for testing
+      window.checkAIClientStatus = async function () {
+        const resultDiv = document.getElementById("statusResult");
+        resultDiv.style.display = "block";
+
+        if (!aiClient) {
+          resultDiv.className = "result error";
+          resultDiv.textContent = "AI Client not initialized";
+          return;
+        }
+
+        try {
+          const status = aiClient.getStatus();
+          resultDiv.className = "result success";
+          resultDiv.textContent = JSON.stringify(status, null, 2);
+        } catch (error) {
+          resultDiv.className = "result error";
+          resultDiv.textContent = "Error checking status: " + error.message;
+        }
+      };
+
+      window.testRewriteText = async function () {
+        const resultDiv = document.getElementById("rewriteResult");
+        resultDiv.style.display = "block";
+        resultDiv.className = "result";
+        resultDiv.textContent = "Testing...";
+
+        if (!aiClient) {
+          resultDiv.className = "result error";
+          resultDiv.textContent = "AI Client not initialized";
+          return;
+        }
+
+        try {
+          const text = document.getElementById("testText").value;
+          const category = document.getElementById("rewriteCategory").value;
+          const level = parseInt(document.getElementById("rewriteLevel").value);
+
+          const result = await aiClient.rewriteText(text, category, level);
+          resultDiv.className = "result success";
+          resultDiv.textContent = JSON.stringify(result, null, 2);
+        } catch (error) {
+          resultDiv.className = "result error";
+          resultDiv.textContent = "Error rewriting text: " + error.message;
+        }
+      };
+
+      window.testSummarizeText = async function () {
+        const resultDiv = document.getElementById("summaryResult");
+        resultDiv.style.display = "block";
+        resultDiv.className = "result";
+        resultDiv.textContent = "Testing...";
+
+        if (!aiClient) {
+          resultDiv.className = "result error";
+          resultDiv.textContent = "AI Client not initialized";
+          return;
+        }
+
+        try {
+          const text = document.getElementById("testText").value;
+          const style = document.getElementById("summaryStyle").value;
+
+          const result = await aiClient.summarizeText(text, style);
+          resultDiv.className = "result success";
+          resultDiv.textContent = JSON.stringify(result, null, 2);
+        } catch (error) {
+          resultDiv.className = "result error";
+          resultDiv.textContent = "Error summarizing text: " + error.message;
+        }
+      };
+
+      window.testDetectStructure = async function () {
+        const resultDiv = document.getElementById("structureResult");
+        resultDiv.style.display = "block";
+        resultDiv.className = "result";
+        resultDiv.textContent = "Testing...";
+
+        if (!aiClient) {
+          resultDiv.className = "result error";
+          resultDiv.textContent = "AI Client not initialized";
+          return;
+        }
+
+        try {
+          const text = document.getElementById("testText").value;
+
+          const result = await aiClient.detectStructure(text);
+          resultDiv.className = "result success";
+          resultDiv.textContent = JSON.stringify(result, null, 2);
+        } catch (error) {
+          resultDiv.className = "result error";
+          resultDiv.textContent = "Error detecting structure: " + error.message;
+        }
+      };
+    </script>
+  </body>
+</html>

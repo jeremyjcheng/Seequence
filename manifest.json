@@ -17,7 +17,9 @@
       "resources": [
         "diagrams/diagram-renderer.js",
         "popup/d3.min.js",
-        "content/ai-processor.js"
+        "content/ai-processor.js",
+        "src/ai/aiClient.js",
+        "src/ai/systemPrompts.js"
       ],
       "matches": ["<all_urls>"]
     }

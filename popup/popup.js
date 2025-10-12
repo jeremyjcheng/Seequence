@@ -1,6 +1,9 @@
 // Popup script for Seequence Chrome extension
 // Handles UI interactions and communication with content script
 
+// Import AI Client (will be loaded via script tag)
+let AIClient = null;
+
 document.addEventListener("DOMContentLoaded", async () => {
   console.log("=== POPUP INITIALIZATION START ===");
   console.log("Popup: DOM loaded, initializing...");
@@ -23,8 +26,15 @@ document.addEventListener("DOMContentLoaded", async () => {
   const hasSelectionDiv = document.getElementById("has-selection");
   const processingDiv = document.getElementById("processing");
   const diagramViewDiv = document.getElementById("diagram-view");
+  const rewrittenTextDiv = document.getElementById("rewritten-text");
   const selectedTextElement = document.getElementById("selected-text");
   const createDiagramButton = document.getElementById("create-diagram");
+  const rewriteTextButton = document.getElementById("rewrite-text");
+  const createDiagramFromRewrittenButton = document.getElementById(
+    "create-diagram-from-rewritten"
+  );
+  const backToSelectionButton = document.getElementById("back-to-selection");
+  const copyRewrittenButton = document.getElementById("copy-rewritten");
   const resetSelectionButton = document.getElementById("reset-selection");
   const switchTypeButton = document.getElementById("switch-type");
   const exportDiagramButton = document.getElementById("export-diagram");
@@ -34,7 +44,19 @@ document.addEventListener("DOMContentLoaded", async () => {
   const summaryLengthOverlay = document.getElementById(
     "summary-length-diagram"
   );
+  const rewritingCategoryContainer =
+    document.getElementById("rewriting-category");
+  const rewritingLevelContainer = document.getElementById("rewriting-level");
+  const rewritingInfoElement = document.getElementById("rewriting-info");
+  const rewrittenTextContentElement = document.getElementById(
+    "rewritten-text-content"
+  );
+
   let summaryLength = "short"; // default
+  let rewritingCategory = "textClarity"; // default
+  let rewritingLevel = 3; // default
+  let currentSelectedText = ""; // store selected text
+  let currentRewrittenText = ""; // store rewritten text
 
   // Debug UI element availability
   console.log("Popup: UI elements found:");
@@ -56,11 +78,29 @@ document.addEventListener("DOMContentLoaded", async () => {
   let diagramRenderer = null;
   let currentDiagramData = null;
 
+  // Initialize AI Client
+  try {
+    // Import AI Client module
+    const { default: AIClientClass } = await import("../src/ai/aiClient.js");
+    AIClient = new AIClientClass();
+    await AIClient.checkAvailability();
+    console.log("Popup: AI Client initialized");
+  } catch (error) {
+    console.error("Popup: Failed to initialize AI Client:", error);
+  }
+
   // Check for selected text when popup opens
   await checkForSelectedText();
 
   // Set up button click handlers
   createDiagramButton.addEventListener("click", handleCreateDiagram);
+  rewriteTextButton.addEventListener("click", handleRewriteText);
+  createDiagramFromRewrittenButton.addEventListener(
+    "click",
+    handleCreateDiagramFromRewritten
+  );
+  backToSelectionButton.addEventListener("click", handleBackToSelection);
+  copyRewrittenButton.addEventListener("click", handleCopyRewritten);
   resetSelectionButton.addEventListener("click", handleResetSelection);
   switchTypeButton.addEventListener("click", handleSwitchType);
   exportDiagramButton.addEventListener("click", handleExportDiagram);
@@ -107,6 +147,41 @@ document.addEventListener("DOMContentLoaded", async () => {
         if (currentDiagramData) {
           showDiagram(currentDiagramData);
         }
+      }
+    });
+  }
+
+  // Rewriting category selection
+  if (rewritingCategoryContainer) {
+    rewritingCategoryContainer.addEventListener("click", (e) => {
+      const target = e.target;
+      if (target && target.matches(".category-button")) {
+        for (const btn of rewritingCategoryContainer.querySelectorAll(
+          ".category-button"
+        )) {
+          btn.classList.remove("active");
+        }
+        target.classList.add("active");
+        rewritingCategory =
+          target.getAttribute("data-category") || "textClarity";
+        updateRewritingInfo();
+      }
+    });
+  }
+
+  // Rewriting level selection
+  if (rewritingLevelContainer) {
+    rewritingLevelContainer.addEventListener("click", (e) => {
+      const target = e.target;
+      if (target && target.matches(".level-button")) {
+        for (const btn of rewritingLevelContainer.querySelectorAll(
+          ".level-button"
+        )) {
+          btn.classList.remove("active");
+        }
+        target.classList.add("active");
+        rewritingLevel = parseInt(target.getAttribute("data-level")) || 3;
+        updateRewritingInfo();
       }
     });
   }
@@ -189,6 +264,9 @@ document.addEventListener("DOMContentLoaded", async () => {
       return;
     }
 
+    // Store the full text for processing
+    currentSelectedText = text;
+
     // Show original text (truncated for preview)
     const previewText =
       text.length > 200 ? text.substring(0, 200) + "..." : text;
@@ -200,6 +278,19 @@ document.addEventListener("DOMContentLoaded", async () => {
     hasSelectionDiv.classList.remove("hidden");
     processingDiv.classList.add("hidden");
     diagramViewDiv.classList.add("hidden");
+    rewrittenTextDiv.classList.add("hidden");
+  }
+
+  // Update rewriting info display
+  function updateRewritingInfo() {
+    if (rewritingInfoElement) {
+      const categoryNames = {
+        textClarity: "Clarity",
+        textFocus: "Focus",
+        textPattern: "Pattern",
+      };
+      rewritingInfoElement.textContent = `${categoryNames[rewritingCategory]} Level ${rewritingLevel}`;
+    }
   }
 
   function showProcessing() {
@@ -207,6 +298,26 @@ document.addEventListener("DOMContentLoaded", async () => {
     hasSelectionDiv.classList.add("hidden");
     processingDiv.classList.remove("hidden");
     diagramViewDiv.classList.add("hidden");
+    rewrittenTextDiv.classList.add("hidden");
+  }
+
+  function showRewrittenText(rewrittenText) {
+    noSelectionDiv.classList.add("hidden");
+    hasSelectionDiv.classList.add("hidden");
+    processingDiv.classList.add("hidden");
+    diagramViewDiv.classList.add("hidden");
+    rewrittenTextDiv.classList.remove("hidden");
+
+    // Update rewriting info
+    updateRewritingInfo();
+
+    // Display rewritten text
+    if (rewrittenTextContentElement) {
+      rewrittenTextContentElement.textContent = rewrittenText;
+    }
+
+    // Store rewritten text for diagram creation
+    currentRewrittenText = rewrittenText;
   }
 
   async function showDiagram(diagramData) {
@@ -303,6 +414,108 @@ document.addEventListener("DOMContentLoaded", async () => {
   function showDiagramResult(diagramData) {
     // Show the actual diagram instead of an alert
     showDiagram(diagramData);
+  }
+
+  // Handle text rewriting
+  async function handleRewriteText() {
+    console.log("=== REWRITE TEXT CLICKED ===");
+    try {
+      if (!currentSelectedText) {
+        showError("No text selected for rewriting.");
+        return;
+      }
+
+      if (!AIClient) {
+        showError("AI Client not available. Please refresh and try again.");
+        return;
+      }
+
+      console.log("Popup: Showing processing state...");
+      showProcessing();
+
+      console.log(
+        "Popup: Rewriting text with category:",
+        rewritingCategory,
+        "level:",
+        rewritingLevel
+      );
+      console.log("Popup: Text length:", currentSelectedText.length);
+
+      // Use AI Client to rewrite text
+      const result = await AIClient.rewriteText(
+        currentSelectedText,
+        rewritingCategory,
+        rewritingLevel
+      );
+
+      console.log("Popup: Rewriting result:", result);
+
+      if (result && result.rewrittenText) {
+        showRewrittenText(result.rewrittenText);
+      } else {
+        showError("Text rewriting failed. Please try again.");
+      }
+    } catch (error) {
+      console.error("Error rewriting text:", error);
+      showError(`An error occurred while rewriting the text: ${error.message}`);
+    }
+  }
+
+  // Handle creating diagram from rewritten text
+  async function handleCreateDiagramFromRewritten() {
+    console.log("=== CREATE DIAGRAM FROM REWRITTEN TEXT CLICKED ===");
+    try {
+      if (!currentRewrittenText) {
+        showError("No rewritten text available for diagram creation.");
+        return;
+      }
+
+      console.log("Popup: Showing processing state...");
+      showProcessing();
+
+      // Process rewritten text with AI
+      const processResponse = await chrome.runtime.sendMessage({
+        action: "processText",
+        text: currentRewrittenText,
+        diagramType: "auto",
+      });
+
+      console.log("Process response:", processResponse);
+
+      if (processResponse.success) {
+        showDiagramResult(processResponse.data);
+      } else {
+        showError(`AI processing failed: ${processResponse.error}`);
+      }
+    } catch (error) {
+      console.error("Error creating diagram from rewritten text:", error);
+      showError(
+        `An error occurred while processing the rewritten text: ${error.message}`
+      );
+    }
+  }
+
+  // Handle back to selection
+  function handleBackToSelection() {
+    console.log("=== BACK TO SELECTION CLICKED ===");
+    showSelectedText(currentSelectedText);
+  }
+
+  // Handle copy rewritten text
+  async function handleCopyRewritten() {
+    console.log("=== COPY REWRITTEN TEXT CLICKED ===");
+    try {
+      if (currentRewrittenText) {
+        await navigator.clipboard.writeText(currentRewrittenText);
+        console.log("Popup: Rewritten text copied to clipboard");
+        // Could show a brief success message here
+      } else {
+        showError("No rewritten text to copy.");
+      }
+    } catch (error) {
+      console.error("Error copying rewritten text:", error);
+      showError("Failed to copy text to clipboard.");
+    }
   }
 
   async function handleCreateDiagram() {
