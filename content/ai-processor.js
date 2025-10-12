@@ -50,13 +50,12 @@ class ContentAIProcessor {
       }
 
       this.availableAPIs = availableAPIs;
-      this.isAvailable = availableAPIs.length > 0;
+
+      // Always mark as available - skip hardware checks
+      this.isAvailable = true;
 
       console.log("Available APIs:", availableAPIs);
-      console.log(
-        "Content AI Processor:",
-        this.isAvailable ? "Available" : "Not Available"
-      );
+      console.log("Content AI Processor: Available (hardware checks bypassed)");
 
       return this.isAvailable;
     } catch (error) {
@@ -64,34 +63,56 @@ class ContentAIProcessor {
         "Content AI Processor: Error checking availability -",
         error.message
       );
-      this.isAvailable = false;
-      return false;
+      // Even on error, mark as available to bypass hardware checks
+      this.isAvailable = true;
+      return true;
     }
   }
 
   // Analyze text structure using available APIs
   async analyzeTextStructure(text) {
-    if (!this.isAvailable) {
-      return await this.analyzeHeuristic(text);
-    }
-
     const startTime = performance.now();
 
     try {
+      // Always try AI APIs first, regardless of hardware checks
       // Try Prompt API first
       if (this.availableAPIs.includes("prompt")) {
-        return await this.analyzeWithPromptAPI(text);
+        try {
+          return await this.analyzeWithPromptAPI(text);
+        } catch (error) {
+          console.log("Prompt API failed, trying next option:", error.message);
+        }
       }
 
       // Try window.ai if available
       if (this.availableAPIs.includes("window.ai")) {
-        return await this.analyzeWithWindowAI(text);
+        try {
+          return await this.analyzeWithWindowAI(text);
+        } catch (error) {
+          console.log("window.ai failed, trying next option:", error.message);
+        }
+      }
+
+      // Try other APIs if available
+      if (this.availableAPIs.includes("summarizer")) {
+        try {
+          return await this.analyzeWithSummarizerAPI(text);
+        } catch (error) {
+          console.log(
+            "Summarizer API failed, trying next option:",
+            error.message
+          );
+        }
       }
 
       // Fallback to heuristic
+      console.log("All AI APIs failed, using heuristic fallback");
       return await this.analyzeHeuristic(text);
     } catch (error) {
-      console.error("AI analysis failed, using heuristic fallback:", error);
+      console.error(
+        "All analysis methods failed, using heuristic fallback:",
+        error
+      );
       return await this.analyzeHeuristic(text);
     } finally {
       const responseTime = performance.now() - startTime;
@@ -159,6 +180,50 @@ class ContentAIProcessor {
       return analysis;
     } catch (error) {
       console.error("window.ai analysis failed:", error);
+      throw error;
+    }
+  }
+
+  // Analyze using Summarizer API (simplified approach)
+  async analyzeWithSummarizerAPI(text) {
+    try {
+      // Use summarizer to get key points, then build analysis
+      const summary = await navigator.ai.summarizer.summarize({
+        text: text,
+        maxLength: 200,
+      });
+
+      // Create a simple analysis from the summary
+      const sentences = summary
+        .split(/[.!?]+/)
+        .filter((s) => s.trim().length > 0);
+      const keyPoints = sentences.map((s, index) => ({
+        text: s.trim(),
+        order: index + 1,
+        type: "point",
+      }));
+
+      const relationships = [];
+      for (let i = 0; i < keyPoints.length - 1; i++) {
+        relationships.push({
+          from: i,
+          to: i + 1,
+          type: "related",
+          label: "→",
+        });
+      }
+
+      return {
+        type: "narrative",
+        confidence: 0.7,
+        mainTopic: sentences[0]?.substring(0, 50) + "..." || "Main Topic",
+        keyPoints,
+        relationships,
+        structure: "narrative",
+        source: "summarizer-api",
+      };
+    } catch (error) {
+      console.error("Summarizer API analysis failed:", error);
       throw error;
     }
   }
