@@ -242,14 +242,18 @@ document.addEventListener("DOMContentLoaded", async () => {
       console.log("Popup: Generating summary for diagram title");
       console.log("Popup: Diagram data:", diagramData);
       console.log("Popup: Selected summary length:", summaryLength);
+      // Use the full original text for summarization, not the truncated title
+      const textToSummarize =
+        diagramData.originalText || diagramData.title || "Generated Diagram";
+      console.log("Popup: Text to summarize length:", textToSummarize.length);
       console.log(
         "Popup: Text to summarize:",
-        diagramData.originalText || diagramData.title || "Generated Diagram"
+        textToSummarize.substring(0, 100) + "..."
       );
+
       const summaryResponse = await chrome.runtime.sendMessage({
         action: "generateSummary",
-        text:
-          diagramData.originalText || diagramData.title || "Generated Diagram",
+        text: textToSummarize,
         length: summaryLength,
       });
 

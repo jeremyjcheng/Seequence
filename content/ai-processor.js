@@ -459,6 +459,9 @@ class ContentAIProcessor {
         source: analysis.source,
       });
 
+      // Add original text to analysis for summarization
+      analysis.originalText = text;
+
       const diagramData = await this.generateDiagramFromAnalysis(
         analysis,
         diagramType
@@ -471,6 +474,7 @@ class ContentAIProcessor {
         edgesCount: diagramData.edges?.length || 0,
         type: diagramData.type,
         source: diagramData.source,
+        originalTextLength: diagramData.originalText?.length || 0,
       });
 
       return diagramData;
@@ -506,6 +510,7 @@ class ContentAIProcessor {
       edges,
       type: analysis.type,
       source: analysis.source,
+      originalText: analysis.originalText, // Add original text for summarization
     };
   }
 
