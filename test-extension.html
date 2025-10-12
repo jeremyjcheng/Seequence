@@ -136,12 +136,12 @@
 
         if (version >= 138) {
           log(
-            `✅ Chrome version ${version} - Built-in AI APIs should be available`,
+            ` Chrome version ${version} - Built-in AI APIs should be available`,
             "success"
           );
         } else {
           log(
-            `⚠️ Chrome version ${version} - Built-in AI APIs require Chrome 138+`,
+            ` Chrome version ${version} - Built-in AI APIs require Chrome 138+`,
             "warning"
           );
         }
@@ -149,14 +149,14 @@
 
       function checkNavigatorAI() {
         if ("ai" in navigator) {
-          log("✅ navigator.ai is available", "success");
+          log(" navigator.ai is available", "success");
           log(
             `Available APIs: ${Object.keys(navigator.ai).join(", ")}`,
             "info"
           );
         } else {
           log(
-            "❌ navigator.ai is not available - Chrome built-in AI APIs not supported",
+            " navigator.ai is not available - Chrome built-in AI APIs not supported",
             "error"
           );
           log(
@@ -175,11 +175,11 @@
             (response) => {
               if (chrome.runtime.lastError) {
                 log(
-                  `❌ Extension communication failed: ${chrome.runtime.lastError.message}`,
+                  ` Extension communication failed: ${chrome.runtime.lastError.message}`,
                   "error"
                 );
               } else if (response && response.success) {
-                log("✅ Extension communication successful", "success");
+                log(" Extension communication successful", "success");
                 log(`AI Available: ${response.status.available}`, "info");
                 if (response.status.builtInAI) {
                   log(
@@ -189,7 +189,7 @@
                 }
               } else {
                 log(
-                  `❌ AI check failed: ${
+                  ` AI check failed: ${
                     response ? response.error : "No response"
                   }`,
                   "error"
@@ -198,7 +198,7 @@
             }
           );
         } else {
-          log("❌ Chrome extension APIs not available", "error");
+          log(" Chrome extension APIs not available", "error");
         }
       }
 

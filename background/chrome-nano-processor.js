@@ -36,11 +36,11 @@ class ChromeNanoProcessor {
         topK: 40,
       });
 
-      console.log("Chrome Nano Processor: ✅ Available and initialized");
+      console.log("Chrome Nano Processor: Available and initialized");
       this.isAvailable = true;
       return true;
     } catch (error) {
-      console.log("Chrome Nano Processor: ❌ Not available -", error.message);
+      console.log("Chrome Nano Processor: Not available -", error.message);
       this.isAvailable = false;
       return false;
     }

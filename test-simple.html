@@ -111,11 +111,11 @@
             (response) => {
               if (chrome.runtime.lastError) {
                 log(
-                  "❌ Extension communication failed: " +
+                  " Extension communication failed: " +
                     chrome.runtime.lastError.message
                 );
               } else if (response && response.success) {
-                log("✅ Extension communication successful");
+                log(" Extension communication successful");
                 log("AI Available: " + response.status.available);
                 if (response.status.builtInAI) {
                   log(
@@ -127,14 +127,14 @@
                 }
               } else {
                 log(
-                  "❌ AI check failed: " +
+                  " AI check failed: " +
                     (response ? response.error : "No response")
                 );
               }
             }
           );
         } else {
-          log("❌ Chrome extension APIs not available");
+          log(" Chrome extension APIs not available");
         }
       }
 
@@ -146,14 +146,14 @@
         log("Chrome version: " + version);
 
         if (version >= 128) {
-          log("✅ Chrome 128+ - Gemini Nano should be available");
+          log(" Chrome 128+ - Gemini Nano should be available");
           log("Check if navigator.ai exists: " + ("ai" in navigator));
           if ("ai" in navigator) {
             log("Available AI APIs: " + Object.keys(navigator.ai).join(", "));
           }
         } else {
           log(
-            "⚠️ Chrome version " +
+            " Chrome version " +
               version +
               " - Gemini Nano requires Chrome 128+ (Dev/Canary)"
           );

@@ -8,7 +8,7 @@ async function debugAIAvailability() {
 
   // Check if navigator.ai exists
   if (!("ai" in navigator)) {
-    console.error("❌ navigator.ai is not available");
+    console.error(" navigator.ai is not available");
     console.log("This means Chrome built-in AI APIs are not available.");
     console.log("Possible causes:");
     console.log("1. Chrome version < 138");
@@ -18,7 +18,7 @@ async function debugAIAvailability() {
     return false;
   }
 
-  console.log("✅ navigator.ai is available");
+  console.log(" navigator.ai is available");
   console.log("Available AI APIs:", Object.keys(navigator.ai));
 
   // Test each API
@@ -35,7 +35,7 @@ async function debugAIAvailability() {
   for (const api of apis) {
     try {
       if (api in navigator.ai) {
-        console.log(`✅ ${api} API is available`);
+        console.log(` ${api} API is available`);
 
         // Test the API with a simple call
         if (api === "summarizer") {
@@ -44,25 +44,25 @@ async function debugAIAvailability() {
               text: "This is a test.",
               maxLength: 10,
             });
-            console.log(`✅ ${api} API test successful:`, result);
+            console.log(` ${api} API test successful:`, result);
           } catch (error) {
-            console.error(`❌ ${api} API test failed:`, error);
+            console.error(` ${api} API test failed:`, error);
           }
         } else if (api === "prompt") {
           try {
             const result = await navigator.ai.prompt.prompt({
               prompt: "Hello, this is a test.",
             });
-            console.log(`✅ ${api} API test successful:`, result);
+            console.log(` ${api} API test successful:`, result);
           } catch (error) {
-            console.error(`❌ ${api} API test failed:`, error);
+            console.error(` ${api} API test failed:`, error);
           }
         }
       } else {
-        console.log(`❌ ${api} API is not available`);
+        console.log(` ${api} API is not available`);
       }
     } catch (error) {
-      console.error(`❌ Error checking ${api} API:`, error);
+      console.error(` Error checking ${api} API:`, error);
     }
   }
 

@@ -93,14 +93,14 @@
         // Test window.ai availability
         const hasWindowAI = "ai" in window;
         html += `<p><strong>window.ai:</strong> ${
-          hasWindowAI ? "✅ Available" : "❌ Not Available"
+          hasWindowAI ? "Available" : "Not Available"
         }</p>`;
 
         if (hasWindowAI) {
           // Test languageModel
           const hasLanguageModel = "languageModel" in window.ai;
           html += `<p><strong>window.ai.languageModel:</strong> ${
-            hasLanguageModel ? "✅ Available" : "❌ Not Available"
+            hasLanguageModel ? "Available" : "Not Available"
           }</p>`;
 
           if (hasLanguageModel) {
@@ -110,17 +110,17 @@
                 temperature: 0.7,
                 topK: 40,
               });
-              html += `<p><strong>Session Creation:</strong> ✅ Success</p>`;
+              html += `<p><strong>Session Creation:</strong> Success</p>`;
 
               // Test a simple prompt
               const result = await session.prompt(
                 "Hello, this is a test of Chrome Nano AI."
               );
-              html += `<p><strong>Prompt Test:</strong> ✅ Success - ${result}</p>`;
+              html += `<p><strong>Prompt Test:</strong> Success - ${result}</p>`;
 
-              html += `<p><strong>Chrome Nano AI Status:</strong> ✅ Fully Working!</p>`;
+              html += `<p><strong>Chrome Nano AI Status:</strong> Fully Working!</p>`;
             } catch (error) {
-              html += `<p><strong>Chrome Nano Test:</strong> ❌ Error - ${error.message}</p>`;
+              html += `<p><strong>Chrome Nano Test:</strong> Error - ${error.message}</p>`;
             }
           }
         }
@@ -140,7 +140,7 @@
         // Test window.ai.summarizer
         const hasSummarizer = "ai" in window && "summarizer" in window.ai;
         html += `<p><strong>window.ai.summarizer:</strong> ${
-          hasSummarizer ? "✅ Available" : "❌ Not Available"
+          hasSummarizer ? "Available" : "Not Available"
         }</p>`;
 
         if (hasSummarizer) {
@@ -149,16 +149,16 @@
               text: "This is a test of the Chrome built-in Summarizer API.",
               maxLength: 50,
             });
-            html += `<p><strong>Summarizer Test:</strong> ✅ Success - ${result}</p>`;
+            html += `<p><strong>Summarizer Test:</strong> Success - ${result}</p>`;
           } catch (error) {
-            html += `<p><strong>Summarizer Test:</strong> ❌ Error - ${error.message}</p>`;
+            html += `<p><strong>Summarizer Test:</strong> Error - ${error.message}</p>`;
           }
         }
 
         // Test window.ai.translator
         const hasTranslator = "ai" in window && "translator" in window.ai;
         html += `<p><strong>window.ai.translator:</strong> ${
-          hasTranslator ? "✅ Available" : "❌ Not Available"
+          hasTranslator ? "Available" : "Not Available"
         }</p>`;
 
         if (hasTranslator) {
@@ -167,9 +167,9 @@
               text: "Hello world",
               targetLanguage: "es",
             });
-            html += `<p><strong>Translator Test:</strong> ✅ Success - ${result}</p>`;
+            html += `<p><strong>Translator Test:</strong> Success - ${result}</p>`;
           } catch (error) {
-            html += `<p><strong>Translator Test:</strong> ❌ Error - ${error.message}</p>`;
+            html += `<p><strong>Translator Test:</strong> Error - ${error.message}</p>`;
           }
         }
 
@@ -205,7 +205,7 @@
         // Test window.ai
         const hasWindowAI = "ai" in window;
         html += `<p><strong>window.ai:</strong> ${
-          hasWindowAI ? "✅ Available" : "❌ Not Available"
+          hasWindowAI ? "Available" : "Not Available"
         }</p>`;
 
         if (hasWindowAI) {
@@ -219,9 +219,9 @@
               const result = await window.ai.prompt.prompt({
                 prompt: "Hello, this is a test.",
               });
-              html += `<p><strong>Prompt Test:</strong> ✅ Success - ${result}</p>`;
+              html += `<p><strong>Prompt Test:</strong> Success - ${result}</p>`;
             } catch (error) {
-              html += `<p><strong>Prompt Test:</strong> ❌ Error - ${error.message}</p>`;
+              html += `<p><strong>Prompt Test:</strong> Error - ${error.message}</p>`;
             }
           }
         }
@@ -242,7 +242,7 @@
         // Test self.ai
         const hasSelfAI = "ai" in self;
         html += `<p><strong>self.ai:</strong> ${
-          hasSelfAI ? "✅ Available" : "❌ Not Available"
+          hasSelfAI ? "Available" : "Not Available"
         }</p>`;
 
         if (hasSelfAI) {

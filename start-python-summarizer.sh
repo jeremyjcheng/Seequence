@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Start Python Summarizer Server for Seequence
-echo "🚀 Starting Seequence Python Summarizer Server..."
+echo " Starting Seequence Python Summarizer Server..."
 
 cd summarizer
 

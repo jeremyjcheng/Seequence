@@ -29,7 +29,7 @@ class BuiltInAIProcessor {
     // First check if window.ai exists at all (Chrome Nano API)
     if (!("ai" in window)) {
       console.warn(
-        "❌ window.ai is not available - Chrome Nano AI APIs not supported"
+        "window.ai is not available - Chrome Nano AI APIs not supported"
       );
       this.availableAPIs = {
         summarizer: false,
@@ -44,7 +44,7 @@ class BuiltInAIProcessor {
       return this.availableAPIs;
     }
 
-    console.log("✅ window.ai is available, checking individual APIs...");
+    console.log("window.ai is available, checking individual APIs...");
     console.log("Available AI APIs:", Object.keys(window.ai));
 
     const checks = await Promise.allSettled([
@@ -76,7 +76,7 @@ class BuiltInAIProcessor {
 
     if (!this.isAvailable) {
       console.warn(
-        "⚠️ No built-in AI APIs are available. Extension will use fallback methods."
+        "No built-in AI APIs are available. Extension will use fallback methods."
       );
     }
 

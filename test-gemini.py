@@ -15,7 +15,7 @@ def test_gemini():
     pem_exists = os.path.exists('gemini-api-key.pem')
     
     if not api_key and not pem_exists:
-        print("❌ No API key found!")
+        print(" No API key found!")
         print("\nTo set up your API key:")
         print("1. Get a Gemini API key from https://makersuite.google.com/app/apikey")
         print("2. Run: ./setup-api-key.sh")
@@ -24,9 +24,9 @@ def test_gemini():
         return
     
     if api_key:
-        print(f"✅ GEMINI_API_KEY found in environment: {api_key[:10]}...")
+        print(f" GEMINI_API_KEY found in environment: {api_key[:10]}...")
     elif pem_exists:
-        print("✅ API key found in PEM file")
+        print(" API key found in PEM file")
     
     # Test the summarizer
     summarizer = GeminiSummarizer()
@@ -44,7 +44,7 @@ def test_gemini():
     
     # Show status
     status = summarizer.get_status()
-    print(f"\n📊 Status:")
+    print(f"\n Status:")
     print(f"  Gemini available: {status['gemini_available']}")
     print(f"  NLTK available: {status['nltk_available']}")
     print(f"  spaCy available: {status['spacy_available']}")
