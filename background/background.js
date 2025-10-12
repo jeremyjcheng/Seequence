@@ -4,7 +4,7 @@
 console.log("SEQUENCE DEBUG: Background service worker loaded");
 
 // Import Chrome Nano processor
-importScripts("chrome-nano-processor.js");
+importScripts("./chrome-nano-processor.js");
 
 // Global variables for AI processors
 let chromeNanoProcessor = null;
@@ -1021,7 +1021,6 @@ class AIProcessorFallback {
 }
 
 let aiProcessor = null;
-let chromeNanoProcessor = null;
 
 // Initialize AI processor immediately when service worker starts
 console.log("SEQUENCE DEBUG: Service worker starting, initializing AI...");
