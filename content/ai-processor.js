@@ -711,20 +711,88 @@ class ContentAIProcessor {
 
     let summary;
     if (length === "short") {
-      // For short summary, take the first meaningful sentence
-      summary = sentences[0] || text.substring(0, 80) + "...";
-      console.log("AI Processor: Short summary created");
+      // For short summary, create a smart summary from key information
+      const firstSentence = sentences[0] || "";
+
+      if (firstSentence.length > 100) {
+        // Extract key information from the first sentence
+        const words = firstSentence.split(" ");
+
+        // Find the most important words (nouns, adjectives, proper nouns)
+        const importantWords = words.filter((word) => {
+          const cleanWord = word.toLowerCase().replace(/[^\w]/g, "");
+          return (
+            cleanWord.length > 3 &&
+            ![
+              "that",
+              "this",
+              "with",
+              "from",
+              "they",
+              "have",
+              "been",
+              "were",
+              "said",
+              "will",
+              "and",
+              "the",
+              "are",
+              "was",
+              "has",
+              "had",
+              "his",
+              "her",
+              "him",
+              "she",
+              "he",
+              "it",
+              "its",
+              "our",
+              "their",
+              "them",
+              "these",
+              "those",
+            ].includes(cleanWord)
+          );
+        });
+
+        // Take first 12-15 important words for a concise summary
+        const keyWords = importantWords.slice(0, 15);
+        summary = keyWords.join(" ") + "...";
+        console.log("AI Processor: Short summary created (smart extraction)");
+      } else {
+        summary = firstSentence;
+        console.log("AI Processor: Short summary created (first sentence)");
+      }
     } else if (length === "medium") {
-      // For medium summary, take first 2 sentences
-      summary = sentences.slice(0, 2).join(". ") + ".";
-      console.log("AI Processor: Medium summary created");
+      // For medium summary, combine key parts from first 2 sentences
+      const firstTwo = sentences.slice(0, 2);
+      if (firstTwo.length >= 2) {
+        const first =
+          firstTwo[0].length > 100
+            ? firstTwo[0].substring(0, 100) + "..."
+            : firstTwo[0];
+        const second =
+          firstTwo[1].length > 80
+            ? firstTwo[1].substring(0, 80) + "..."
+            : firstTwo[1];
+        summary = first + " " + second;
+        console.log("AI Processor: Medium summary created (combined)");
+      } else {
+        summary = firstTwo[0] || "";
+        console.log("AI Processor: Medium summary created (single sentence)");
+      }
     } else {
-      // For long summary, take first 3 sentences
-      summary = sentences.slice(0, 3).join(". ") + ".";
-      console.log("AI Processor: Long summary created");
+      // For long summary, take first 3 sentences with smart truncation
+      const firstThree = sentences.slice(0, 3);
+      const summaryParts = firstThree.map((sentence) =>
+        sentence.length > 120 ? sentence.substring(0, 120) + "..." : sentence
+      );
+      summary = summaryParts.join(" ");
+      console.log("AI Processor: Long summary created (smart truncation)");
     }
 
-    // Ensure summary is not too long
+    // Final length check
     if (summary.length > 300) {
       summary = summary.substring(0, 300) + "...";
     }

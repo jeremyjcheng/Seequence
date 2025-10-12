@@ -14,7 +14,11 @@
 
   "web_accessible_resources": [
     {
-      "resources": ["diagrams/diagram-renderer.js", "popup/d3.min.js"],
+      "resources": [
+        "diagrams/diagram-renderer.js",
+        "popup/d3.min.js",
+        "content/ai-processor.js"
+      ],
       "matches": ["<all_urls>"]
     }
   ],
@@ -22,7 +26,7 @@
   "content_scripts": [
     {
       "matches": ["<all_urls>"],
-      "js": ["content/content.js", "content/ai-processor.js"],
+      "js": ["content/content.js"],
       "run_at": "document_end"
     }
   ],

@@ -1,0 +1,262 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Test Chrome Nano AI</title>
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+        max-width: 800px;
+        margin: 0 auto;
+        padding: 20px;
+        line-height: 1.6;
+      }
+      .test-section {
+        margin: 20px 0;
+        padding: 15px;
+        border: 1px solid #ddd;
+        border-radius: 5px;
+      }
+      .success {
+        background-color: #d4edda;
+        border-color: #c3e6cb;
+      }
+      .failure {
+        background-color: #f8d7da;
+        border-color: #f5c6cb;
+      }
+      .info {
+        background-color: #d1ecf1;
+        border-color: #bee5eb;
+      }
+      button {
+        background-color: #007bff;
+        color: white;
+        border: none;
+        padding: 10px 20px;
+        border-radius: 5px;
+        cursor: pointer;
+        margin: 5px;
+      }
+      button:hover {
+        background-color: #0056b3;
+      }
+      #results {
+        margin-top: 20px;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>Chrome Nano AI Test</h1>
+
+    <div class="info">
+      <h3>Testing Chrome's Built-in Gemini Nano AI</h3>
+      <p>This page will test if Chrome's AI APIs are working properly.</p>
+    </div>
+
+    <button onclick="testWindowAI()">Test window.ai</button>
+    <button onclick="testNavigatorAI()">Test navigator.ai</button>
+    <button onclick="testPromptAPI()">Test Prompt API</button>
+    <button onclick="testSummarizerAPI()">Test Summarizer API</button>
+    <button onclick="runAllTests()">Run All Tests</button>
+
+    <div id="results"></div>
+
+    <script>
+      function addResult(title, status, details) {
+        const resultsDiv = document.getElementById("results");
+        const div = document.createElement("div");
+        div.className = `test-section ${status}`;
+        div.innerHTML = `<strong>${title}</strong><br>${details}`;
+        resultsDiv.appendChild(div);
+      }
+
+      function clearResults() {
+        document.getElementById("results").innerHTML = "";
+      }
+
+      async function testWindowAI() {
+        clearResults();
+        console.log("Testing window.ai...");
+
+        if (typeof window !== "undefined" && "ai" in window) {
+          addResult("window.ai Detection", "success", "window.ai object found");
+
+          if ("languageModel" in window.ai) {
+            addResult(
+              "window.ai.languageModel",
+              "success",
+              "languageModel property found"
+            );
+
+            try {
+              console.log("Creating session...");
+              const session = await window.ai.languageModel.create({
+                temperature: 0.7,
+                topK: 40,
+              });
+              addResult(
+                "window.ai Session",
+                "success",
+                "Session created successfully!"
+              );
+
+              try {
+                console.log("Testing prompt...");
+                const result = await session.prompt("Hello, how are you?");
+                addResult(
+                  "window.ai Prompt",
+                  "success",
+                  `Response: ${result.substring(0, 100)}...`
+                );
+              } catch (error) {
+                addResult(
+                  "window.ai Prompt",
+                  "failure",
+                  `Prompt failed: ${error.message}`
+                );
+              }
+            } catch (error) {
+              addResult(
+                "window.ai Session",
+                "failure",
+                `Session creation failed: ${error.message}`
+              );
+            }
+          } else {
+            addResult(
+              "window.ai.languageModel",
+              "failure",
+              "languageModel property not found"
+            );
+          }
+        } else {
+          addResult(
+            "window.ai Detection",
+            "failure",
+            "window.ai not available"
+          );
+        }
+      }
+
+      async function testNavigatorAI() {
+        clearResults();
+        console.log("Testing navigator.ai...");
+
+        if ("ai" in navigator) {
+          addResult(
+            "navigator.ai Detection",
+            "success",
+            "navigator.ai object found"
+          );
+
+          const apis = [];
+          if ("prompt" in navigator.ai) apis.push("prompt");
+          if ("summarizer" in navigator.ai) apis.push("summarizer");
+          if ("translator" in navigator.ai) apis.push("translator");
+          if ("writer" in navigator.ai) apis.push("writer");
+
+          if (apis.length > 0) {
+            addResult(
+              "navigator.ai APIs",
+              "success",
+              `Available: ${apis.join(", ")}`
+            );
+          } else {
+            addResult("navigator.ai APIs", "failure", "No specific APIs found");
+          }
+        } else {
+          addResult(
+            "navigator.ai Detection",
+            "failure",
+            "navigator.ai not available"
+          );
+        }
+      }
+
+      async function testPromptAPI() {
+        clearResults();
+        console.log("Testing navigator.ai.prompt...");
+
+        if ("ai" in navigator && "prompt" in navigator.ai) {
+          try {
+            const result = await navigator.ai.prompt(
+              "Summarize this: The quick brown fox jumps over the lazy dog."
+            );
+            addResult("Prompt API Test", "success", `Response: ${result}`);
+          } catch (error) {
+            addResult("Prompt API Test", "failure", `Error: ${error.message}`);
+          }
+        } else {
+          addResult(
+            "Prompt API Test",
+            "failure",
+            "navigator.ai.prompt not available"
+          );
+        }
+      }
+
+      async function testSummarizerAPI() {
+        clearResults();
+        console.log("Testing navigator.ai.summarizer...");
+
+        if ("ai" in navigator && "summarizer" in navigator.ai) {
+          try {
+            const result = await navigator.ai.summarizer.summarize({
+              text: "The quick brown fox jumps over the lazy dog. This is a test sentence for summarization.",
+              maxLength: 50,
+            });
+            addResult("Summarizer API Test", "success", `Summary: ${result}`);
+          } catch (error) {
+            addResult(
+              "Summarizer API Test",
+              "failure",
+              `Error: ${error.message}`
+            );
+          }
+        } else {
+          addResult(
+            "Summarizer API Test",
+            "failure",
+            "navigator.ai.summarizer not available"
+          );
+        }
+      }
+
+      async function runAllTests() {
+        clearResults();
+        addResult("Test Suite", "info", "Running all tests...");
+
+        await testWindowAI();
+        await new Promise((resolve) => setTimeout(resolve, 1000));
+
+        await testNavigatorAI();
+        await new Promise((resolve) => setTimeout(resolve, 1000));
+
+        await testPromptAPI();
+        await new Promise((resolve) => setTimeout(resolve, 1000));
+
+        await testSummarizerAPI();
+      }
+
+      // Auto-run basic detection on page load
+      window.addEventListener("load", () => {
+        console.log("Page loaded, checking AI availability...");
+        addResult("Page Load", "info", "Checking AI availability...");
+
+        if (typeof window !== "undefined" && "ai" in window) {
+          addResult("window.ai", "success", "Available");
+        } else {
+          addResult("window.ai", "failure", "Not available");
+        }
+
+        if ("ai" in navigator) {
+          addResult("navigator.ai", "success", "Available");
+        } else {
+          addResult("navigator.ai", "failure", "Not available");
+        }
+      });
+    </script>
+  </body>
+</html>
