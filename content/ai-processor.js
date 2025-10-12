@@ -968,7 +968,7 @@ class ContentAIProcessor {
       // Extract text from prompt (everything after "Rewrite this text:")
       const textMatch = prompt.match(/Rewrite this text:\s*(.+)/s);
       const text = textMatch ? textMatch[1] : prompt;
-      
+
       // Use summarizer to get a simplified version
       const summary = await navigator.ai.summarizer.summarize({
         text: text,
@@ -1004,7 +1004,7 @@ class ContentAIProcessor {
     // Basic rewriting: simplify sentences
     const rewritten = sentences.map((sentence) => {
       let simplified = sentence;
-      
+
       // Replace complex words with simpler ones
       simplified = simplified.replace(/\b(utilize|utilise)\b/g, "use");
       simplified = simplified.replace(/\b(commence)\b/g, "start");
@@ -1012,21 +1012,18 @@ class ContentAIProcessor {
       simplified = simplified.replace(/\b(consequently)\b/g, "so");
       simplified = simplified.replace(/\b(furthermore)\b/g, "also");
       simplified = simplified.replace(/\b(however)\b/g, "but");
-      
+
       // Break down long sentences
       if (simplified.length > 100) {
         simplified = simplified.replace(/,/g, ". ");
       }
-      
+
       return simplified;
     });
 
     const result = rewritten.join(". ").trim() + ".";
 
-    console.log(
-      "AI Processor: Final heuristic rewrite length:",
-      result.length
-    );
+    console.log("AI Processor: Final heuristic rewrite length:", result.length);
     console.log(
       "AI Processor: Heuristic rewrite preview:",
       result.substring(0, 100) + "..."
@@ -1112,9 +1109,7 @@ window.addEventListener("message", async (event) => {
         "*"
       );
     } else if (data.action === "rewrite") {
-      const rewrite = await window.contentAIProcessor.rewriteText(
-        data.prompt
-      );
+      const rewrite = await window.contentAIProcessor.rewriteText(data.prompt);
       window.postMessage(
         {
           __seequence: true,

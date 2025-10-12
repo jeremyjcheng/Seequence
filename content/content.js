@@ -14,6 +14,14 @@ const script = document.createElement("script");
 script.src = chrome.runtime.getURL("content/ai-processor.js");
 script.onload = function () {
   console.log("Content: AI Processor script loaded successfully");
+  // Wait a bit for the script to initialize
+  setTimeout(() => {
+    if (window.contentAIProcessor) {
+      console.log("Content: AI Processor is available in main world");
+    } else {
+      console.error("Content: AI Processor not found in main world");
+    }
+  }, 100);
 };
 script.onerror = function (error) {
   console.error("Content: Failed to load AI processor script:", error);
@@ -140,6 +148,20 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
         sendResponse({ success: false, error: error.message });
       });
     return true; // Keep message channel open for async response
+  } else if (request.action === "checkAvailability") {
+    console.log("Content: checkAvailability requested");
+    // Check if AI processor is available in main world
+    if (window.contentAIProcessor) {
+      console.log("Content: AI Processor available in main world");
+      sendResponse({ success: true, available: true });
+    } else {
+      console.log("Content: AI Processor not available in main world");
+      sendResponse({
+        success: false,
+        available: false,
+        error: "AI Processor not available",
+      });
+    }
   } else {
     console.log("Content: Unknown action requested:", request.action);
     sendResponse({ success: false, error: "Unknown action" });
@@ -149,6 +171,13 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
 // Process text using AI
 async function processTextWithAI(text, diagramType) {
   console.log("Content script: Processing text with AI");
+
+  // Check if AI processor is available
+  if (!window.contentAIProcessor) {
+    console.error("Content script: AI Processor not available in main world");
+    throw new Error("AI Processor not available");
+  }
+
   // Ensure main-world AI is initialized
   console.log("Content script: Requesting AI availability in main world...");
   await sendToMainWorld("checkAvailability");
@@ -165,6 +194,13 @@ async function processTextWithAI(text, diagramType) {
 // Generate summary using AI
 async function generateSummaryWithAI(text, length) {
   console.log("Content script: Generating summary with AI");
+
+  // Check if AI processor is available
+  if (!window.contentAIProcessor) {
+    console.error("Content script: AI Processor not available in main world");
+    throw new Error("AI Processor not available");
+  }
+
   // Ensure main-world AI is initialized
   console.log("Content script: Requesting AI availability in main world...");
   await sendToMainWorld("checkAvailability");
@@ -181,6 +217,13 @@ async function generateSummaryWithAI(text, length) {
 // Rewrite text using AI
 async function rewriteTextWithAI(prompt) {
   console.log("Content script: Rewriting text with AI");
+
+  // Check if AI processor is available
+  if (!window.contentAIProcessor) {
+    console.error("Content script: AI Processor not available in main world");
+    throw new Error("AI Processor not available");
+  }
+
   // Ensure main-world AI is initialized
   console.log("Content script: Requesting AI availability in main world...");
   await sendToMainWorld("checkAvailability");

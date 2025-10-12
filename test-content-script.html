@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Content Script Test</title>
+  </head>
+  <body>
+    <h1>Content Script Test</h1>
+    <p>
+      This is a test page to check if the Seequence content script is being
+      injected properly.
+    </p>
+    <p>Select some text and check the console for AI processor logs.</p>
+
+    <div id="test-content">
+      <h2>Sample Content</h2>
+      <p>
+        Eric Patrick Clapton (born 30 March 1945) is an English rock and blues
+        guitarist, singer, and songwriter. He is regarded as one of the most
+        successful and influential guitarists in rock music. Clapton has been
+        inducted into the Rock and Roll Hall of Fame three times: once as a solo
+        artist and separately as a member of the Yardbirds and of Cream.
+      </p>
+
+      <h3>Early Life</h3>
+      <p>
+        Clapton was born in Ripley, Surrey, England, and grew up believing that
+        his grandmother was his mother and that his mother was his older sister.
+        His biological father was a Canadian soldier stationed in England during
+        World War II.
+      </p>
+
+      <h3>Career</h3>
+      <p>
+        Clapton began his career in the early 1960s as a member of the
+        Yardbirds, then joined John Mayall & the Bluesbreakers, and later formed
+        Cream with Jack Bruce and Ginger Baker. After Cream disbanded, he formed
+        Blind Faith with Steve Winwood, Ginger Baker, and Ric Grech.
+      </p>
+    </div>
+
+    <script>
+      // Test if content script is loaded
+      console.log("=== CONTENT SCRIPT TEST ===");
+      console.log("Page loaded, checking for content script...");
+
+      // Check if AI processor is available
+      if (window.contentAIProcessor) {
+        console.log("✅ Content AI Processor found!");
+        console.log("Available APIs:", window.contentAIProcessor.availableAPIs);
+        console.log("Is Available:", window.contentAIProcessor.isAvailable);
+      } else {
+        console.log("❌ Content AI Processor not found");
+      }
+
+      // Check for navigator.ai
+      if (navigator.ai) {
+        console.log("✅ navigator.ai available");
+        console.log("Prompt API:", "prompt" in navigator.ai);
+        console.log("Summarizer API:", "summarizer" in navigator.ai);
+      } else {
+        console.log("❌ navigator.ai not available");
+      }
+
+      // Check for window.ai
+      if (window.ai) {
+        console.log("✅ window.ai available");
+        console.log("Language Model:", "languageModel" in window.ai);
+      } else {
+        console.log("❌ window.ai not available");
+      }
+    </script>
+  </body>
+</html>
