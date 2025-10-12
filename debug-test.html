@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Debug Test - Seequence Extension</title>
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+        margin: 20px;
+      }
+      .test-section {
+        margin: 20px 0;
+        padding: 15px;
+        border: 1px solid #ccc;
+        border-radius: 5px;
+      }
+      .success {
+        background-color: #d4edda;
+        border-color: #c3e6cb;
+      }
+      .error {
+        background-color: #f8d7da;
+        border-color: #f5c6cb;
+      }
+      .info {
+        background-color: #d1ecf1;
+        border-color: #bee5eb;
+      }
+      button {
+        padding: 10px 15px;
+        margin: 5px;
+        background: #007bff;
+        color: white;
+        border: none;
+        border-radius: 3px;
+        cursor: pointer;
+      }
+      button:hover {
+        background: #0056b3;
+      }
+      #log {
+        background: #f8f9fa;
+        padding: 10px;
+        border: 1px solid #dee2e6;
+        border-radius: 3px;
+        max-height: 300px;
+        overflow-y: auto;
+        font-family: monospace;
+        font-size: 12px;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>🔍 Seequence Extension Debug Test</h1>
+
+    <div class="test-section info">
+      <h3>📋 Instructions</h3>
+      <p>1. Make sure the Seequence extension is loaded and enabled</p>
+      <p>2. Select some text below</p>
+      <p>3. Click the Seequence extension icon in the toolbar</p>
+      <p>4. Check the console logs below</p>
+    </div>
+
+    <div class="test-section">
+      <h3>🧪 Test Content</h3>
+      <p>
+        Select this text:
+        <strong
+          >Eric Clapton is a famous guitarist who played with Cream and Derek
+          and the Dominos. He is known for songs like "Layla" and "Tears in
+          Heaven".</strong
+        >
+      </p>
+    </div>
+
+    <div class="test-section">
+      <h3>🔧 Debug Actions</h3>
+      <button onclick="testContentScript()">Test Content Script</button>
+      <button onclick="testAIPProcessor()">Test AI Processor</button>
+      <button onclick="testChromeAPIs()">Test Chrome APIs</button>
+      <button onclick="clearLog()">Clear Log</button>
+    </div>
+
+    <div class="test-section">
+      <h3>📊 Debug Log</h3>
+      <div id="log"></div>
+    </div>
+
+    <script>
+      function log(message, type = "info") {
+        const logDiv = document.getElementById("log");
+        const timestamp = new Date().toLocaleTimeString();
+        const logEntry = document.createElement("div");
+        logEntry.style.color =
+          type === "error" ? "red" : type === "success" ? "green" : "black";
+        logEntry.textContent = `[${timestamp}] ${message}`;
+        logDiv.appendChild(logEntry);
+        logDiv.scrollTop = logDiv.scrollHeight;
+        console.log(message);
+      }
+
+      function clearLog() {
+        document.getElementById("log").innerHTML = "";
+      }
+
+      function testContentScript() {
+        log("=== TESTING CONTENT SCRIPT ===");
+
+        // Check if content script is loaded
+        if (typeof chrome !== "undefined" && chrome.runtime) {
+          log("✅ Chrome runtime available", "success");
+        } else {
+          log("❌ Chrome runtime not available", "error");
+        }
+
+        // Check for extension messages
+        if (chrome?.runtime?.onMessage) {
+          log("✅ Chrome message listener available", "success");
+        } else {
+          log("❌ Chrome message listener not available", "error");
+        }
+      }
+
+      function testAIPProcessor() {
+        log("=== TESTING AI PROCESSOR ===");
+
+        if (window.contentAIProcessor) {
+          log("✅ AI Processor found in main world", "success");
+          log(
+            `Available APIs: ${JSON.stringify(
+              window.contentAIProcessor.availableAPIs
+            )}`,
+            "info"
+          );
+          log(`Is Available: ${window.contentAIProcessor.isAvailable}`, "info");
+        } else {
+          log("❌ AI Processor not found in main world", "error");
+          log("This means the content script injection failed", "error");
+        }
+      }
+
+      function testChromeAPIs() {
+        log("=== TESTING CHROME AI APIs ===");
+
+        // Test navigator.ai
+        if (navigator.ai) {
+          log("✅ navigator.ai available", "success");
+          log(`Prompt API: ${"prompt" in navigator.ai}`, "info");
+          log(`Summarizer API: ${"summarizer" in navigator.ai}`, "info");
+        } else {
+          log("❌ navigator.ai not available", "error");
+          log("Make sure Chrome flags are enabled", "error");
+        }
+
+        // Test window.ai
+        if (window.ai) {
+          log("✅ window.ai available", "success");
+          log(`Language Model: ${"languageModel" in window.ai}`, "info");
+        } else {
+          log("❌ window.ai not available", "error");
+        }
+      }
+
+      // Auto-run tests on page load
+      window.addEventListener("load", () => {
+        log("Page loaded, running initial tests...");
+        setTimeout(() => {
+          testContentScript();
+          testAIPProcessor();
+          testChromeAPIs();
+        }, 1000);
+      });
+
+      // Monitor for AI processor changes
+      let checkCount = 0;
+      const checkAIProcessor = () => {
+        checkCount++;
+        if (window.contentAIProcessor) {
+          log(`✅ AI Processor found after ${checkCount} checks`, "success");
+        } else if (checkCount < 10) {
+          log(`⏳ AI Processor not found yet (check ${checkCount}/10)`, "info");
+          setTimeout(checkAIProcessor, 500);
+        } else {
+          log("❌ AI Processor still not found after 10 checks", "error");
+        }
+      };
+
+      // Start checking for AI processor
+      setTimeout(checkAIProcessor, 1000);
+    </script>
+  </body>
+</html>

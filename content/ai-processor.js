@@ -5,6 +5,8 @@ console.log("=== AI PROCESSOR INITIALIZATION ===");
 console.log("AI Processor: Script loaded on:", window.location.href);
 console.log("AI Processor: window.ai available:", "ai" in window);
 console.log("AI Processor: navigator.ai available:", "ai" in navigator);
+console.log("AI Processor: Document ready state:", document.readyState);
+console.log("AI Processor: Chrome runtime available:", !!chrome?.runtime);
 
 class ContentAIProcessor {
   constructor() {

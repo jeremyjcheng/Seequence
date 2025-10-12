@@ -18,13 +18,22 @@ script.onload = function () {
   setTimeout(() => {
     if (window.contentAIProcessor) {
       console.log("Content: AI Processor is available in main world");
+      console.log(
+        "Content: Available APIs:",
+        window.contentAIProcessor.availableAPIs
+      );
     } else {
       console.error("Content: AI Processor not found in main world");
+      console.error("Content: window.contentAIProcessor is undefined");
     }
-  }, 100);
+  }, 500); // Increased timeout
 };
 script.onerror = function (error) {
   console.error("Content: Failed to load AI processor script:", error);
+  console.error(
+    "Content: Script URL:",
+    chrome.runtime.getURL("content/ai-processor.js")
+  );
 };
 document.head.appendChild(script);
 
@@ -153,13 +162,34 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     // Check if AI processor is available in main world
     if (window.contentAIProcessor) {
       console.log("Content: AI Processor available in main world");
+      console.log(
+        "Content: Available APIs:",
+        window.contentAIProcessor.availableAPIs
+      );
       sendResponse({ success: true, available: true });
     } else {
       console.log("Content: AI Processor not available in main world");
+      console.log("Content: Attempting to re-inject AI processor...");
+
+      // Try to re-inject the AI processor
+      const script = document.createElement("script");
+      script.src = chrome.runtime.getURL("content/ai-processor.js");
+      script.onload = function () {
+        console.log("Content: AI Processor re-injected successfully");
+        setTimeout(() => {
+          if (window.contentAIProcessor) {
+            console.log(
+              "Content: AI Processor now available after re-injection"
+            );
+          }
+        }, 100);
+      };
+      document.head.appendChild(script);
+
       sendResponse({
         success: false,
         available: false,
-        error: "AI Processor not available",
+        error: "AI Processor not available - attempting re-injection",
       });
     }
   } else {
