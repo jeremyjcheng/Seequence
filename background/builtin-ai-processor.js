@@ -24,12 +24,12 @@ class BuiltInAIProcessor {
   async checkAvailability() {
     console.log("Checking built-in AI API availability...");
     console.log("Chrome version:", navigator.userAgent);
-    console.log("Navigator.ai exists:", "ai" in navigator);
+    console.log("Window.ai exists:", "ai" in window);
 
-    // First check if navigator.ai exists at all
-    if (!("ai" in navigator)) {
+    // First check if window.ai exists at all (Chrome Nano API)
+    if (!("ai" in window)) {
       console.warn(
-        "❌ navigator.ai is not available - Chrome built-in AI APIs not supported"
+        "❌ window.ai is not available - Chrome Nano AI APIs not supported"
       );
       this.availableAPIs = {
         summarizer: false,
@@ -44,8 +44,8 @@ class BuiltInAIProcessor {
       return this.availableAPIs;
     }
 
-    console.log("✅ navigator.ai is available, checking individual APIs...");
-    console.log("Available AI APIs:", Object.keys(navigator.ai));
+    console.log("✅ window.ai is available, checking individual APIs...");
+    console.log("Available AI APIs:", Object.keys(window.ai));
 
     const checks = await Promise.allSettled([
       this.checkSummarizerAPI(),
@@ -86,9 +86,9 @@ class BuiltInAIProcessor {
   // Check Summarizer API availability
   async checkSummarizerAPI() {
     try {
-      if ("ai" in navigator && "summarizer" in navigator.ai) {
+      if ("ai" in window && "summarizer" in window.ai) {
         // Test the API with a simple request
-        const testResult = await navigator.ai.summarizer.summarize({
+        const testResult = await window.ai.summarizer.summarize({
           text: "This is a test.",
           maxLength: 10,
         });
@@ -104,9 +104,9 @@ class BuiltInAIProcessor {
   // Check Prompt API availability (Chrome Extensions only)
   async checkPromptAPI() {
     try {
-      if ("ai" in navigator && "prompt" in navigator.ai) {
+      if ("ai" in window && "prompt" in window.ai) {
         // Test the API with a simple request
-        const testResult = await navigator.ai.prompt.prompt({
+        const testResult = await window.ai.prompt.prompt({
           prompt: "Hello, this is a test.",
         });
         console.log("Prompt API available");
@@ -121,9 +121,9 @@ class BuiltInAIProcessor {
   // Check Translator API availability
   async checkTranslatorAPI() {
     try {
-      if ("ai" in navigator && "translator" in navigator.ai) {
+      if ("ai" in window && "translator" in window.ai) {
         // Test the API with a simple request
-        const testResult = await navigator.ai.translator.translate({
+        const testResult = await window.ai.translator.translate({
           text: "Hello",
           targetLanguage: "es",
         });
@@ -139,9 +139,9 @@ class BuiltInAIProcessor {
   // Check Language Detector API availability
   async checkLanguageDetectorAPI() {
     try {
-      if ("ai" in navigator && "languageDetector" in navigator.ai) {
+      if ("ai" in window && "languageDetector" in window.ai) {
         // Test the API with a simple request
-        const testResult = await navigator.ai.languageDetector.detect({
+        const testResult = await window.ai.languageDetector.detect({
           text: "Hello world",
         });
         console.log("Language Detector API available");
@@ -156,7 +156,7 @@ class BuiltInAIProcessor {
   // Check Writer API availability (Origin trial)
   async checkWriterAPI() {
     try {
-      if ("ai" in navigator && "writer" in navigator.ai) {
+      if ("ai" in window && "writer" in window.ai) {
         console.log("Writer API available");
         return true;
       }
@@ -169,7 +169,7 @@ class BuiltInAIProcessor {
   // Check Rewriter API availability (Origin trial)
   async checkRewriterAPI() {
     try {
-      if ("ai" in navigator && "rewriter" in navigator.ai) {
+      if ("ai" in window && "rewriter" in window.ai) {
         console.log("Rewriter API available");
         return true;
       }
@@ -182,7 +182,7 @@ class BuiltInAIProcessor {
   // Check Proofreader API availability (Origin trial)
   async checkProofreaderAPI() {
     try {
-      if ("ai" in navigator && "proofreader" in navigator.ai) {
+      if ("ai" in window && "proofreader" in window.ai) {
         console.log("Proofreader API available");
         return true;
       }
@@ -228,7 +228,7 @@ class BuiltInAIProcessor {
     Return only valid JSON.`;
 
     try {
-      const result = await navigator.ai.prompt.prompt({
+      const result = await window.ai.prompt.prompt({
         prompt: prompt,
       });
 
@@ -273,7 +273,7 @@ class BuiltInAIProcessor {
     const maxLength = lengthMapping[length] || 150;
 
     try {
-      const result = await navigator.ai.summarizer.summarize({
+      const result = await window.ai.summarizer.summarize({
         text: text,
         maxLength: maxLength,
       });
@@ -332,7 +332,7 @@ class BuiltInAIProcessor {
     Return only valid JSON.`;
 
     try {
-      const result = await navigator.ai.prompt.prompt({
+      const result = await window.ai.prompt.prompt({
         prompt: prompt,
       });
 
@@ -349,7 +349,7 @@ class BuiltInAIProcessor {
   async detectLanguage(text) {
     try {
       if (this.availableAPIs.languageDetector) {
-        const result = await navigator.ai.languageDetector.detect({
+        const result = await window.ai.languageDetector.detect({
           text: text,
         });
         return {
@@ -371,7 +371,7 @@ class BuiltInAIProcessor {
   async translateText(text, targetLanguage) {
     try {
       if (this.availableAPIs.translator) {
-        const result = await navigator.ai.translator.translate({
+        const result = await window.ai.translator.translate({
           text: text,
           targetLanguage: targetLanguage,
         });

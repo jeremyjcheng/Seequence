@@ -3,6 +3,12 @@
 
 console.log("SEQUENCE DEBUG: Background service worker loaded");
 
+// Import Chrome Nano processor
+importScripts("chrome-nano-processor.js");
+
+// Global variables for AI processors
+let chromeNanoProcessor = null;
+
 // Built-in AI Processor using Mochi's approach (Gemini Nano via self.ai.prompt)
 console.log("SEQUENCE DEBUG: Defining BuiltInAIProcessor class");
 class BuiltInAIProcessor {
@@ -1015,7 +1021,7 @@ class AIProcessorFallback {
 }
 
 let aiProcessor = null;
-let builtInAIProcessor = null;
+let chromeNanoProcessor = null;
 
 // Initialize AI processor immediately when service worker starts
 console.log("SEQUENCE DEBUG: Service worker starting, initializing AI...");
@@ -1041,57 +1047,49 @@ async function initializeAI() {
   console.log("SEQUENCE DEBUG: Starting AI initialization...");
 
   try {
-    // Initialize built-in AI processor first (Chrome 138+ APIs) if available
-    if (BuiltInAIProcessor) {
-      console.log("SEQUENCE DEBUG: BuiltInAIProcessor class is available");
+    // Initialize Chrome Nano processor first
+    if (ChromeNanoProcessor) {
+      console.log("SEQUENCE DEBUG: ChromeNanoProcessor class is available");
       try {
-        console.log("SEQUENCE DEBUG: Creating BuiltInAIProcessor instance...");
-        builtInAIProcessor = new BuiltInAIProcessor();
+        console.log("SEQUENCE DEBUG: Creating ChromeNanoProcessor instance...");
+        chromeNanoProcessor = new ChromeNanoProcessor();
 
-        console.log("SEQUENCE DEBUG: Checking built-in AI availability...");
-        const builtInAvailable = await builtInAIProcessor.checkAvailability();
+        console.log("SEQUENCE DEBUG: Checking Chrome Nano availability...");
+        const nanoAvailable = await chromeNanoProcessor.checkAvailability();
         console.log(
-          "SEQUENCE DEBUG: Built-in AI Processor initialized:",
-          builtInAvailable
+          "SEQUENCE DEBUG: Chrome Nano Processor initialized:",
+          nanoAvailable
         );
         console.log(
-          "SEQUENCE DEBUG: builtInAIProcessor.isAvailable:",
-          builtInAIProcessor.isAvailable
-        );
-        console.log(
-          "SEQUENCE DEBUG: builtInAIProcessor.availableAPIs:",
-          builtInAIProcessor.availableAPIs
+          "SEQUENCE DEBUG: chromeNanoProcessor.isAvailable:",
+          chromeNanoProcessor.isAvailable
         );
 
-        if (builtInAIProcessor.isAvailable) {
-          console.log("SEQUENCE DEBUG: Built-in AI APIs are AVAILABLE!");
+        if (chromeNanoProcessor.isAvailable) {
+          console.log("SEQUENCE DEBUG: Chrome Nano AI is AVAILABLE!");
           console.log(
-            "SEQUENCE DEBUG: Available APIs:",
-            builtInAIProcessor.availableAPIs
-          );
-          console.log(
-            "SEQUENCE DEBUG: Using built-in AI APIs for hackathon compliance"
+            "SEQUENCE DEBUG: Using Chrome Nano for hackathon compliance"
           );
           return;
         } else {
-          console.log("SEQUENCE DEBUG: Built-in AI APIs are NOT available");
+          console.log("SEQUENCE DEBUG: Chrome Nano AI is NOT available");
         }
-      } catch (builtInError) {
+      } catch (nanoError) {
         console.error(
-          "SEQUENCE DEBUG: Built-in AI processor failed:",
-          builtInError
+          "SEQUENCE DEBUG: Chrome Nano processor failed:",
+          nanoError
         );
-        builtInAIProcessor = null;
+        chromeNanoProcessor = null;
       }
     } else {
-      console.log("SEQUENCE DEBUG: BuiltInAIProcessor class not available");
+      console.log("SEQUENCE DEBUG: ChromeNanoProcessor class not available");
     }
 
     console.log(
       "SEQUENCE DEBUG: Chrome built-in AI APIs not available - no fallbacks"
     );
     console.log(
-      "SEQUENCE DEBUG: Extension requires Chrome 138+ with AI flags enabled"
+      "SEQUENCE DEBUG: Extension requires Chrome 127+ with AI flags enabled"
     );
   } catch (error) {
     console.error("SEQUENCE DEBUG: Error initializing AI processor:", error);
@@ -1143,7 +1141,7 @@ async function handleTextProcessing(request, sendResponse) {
 
   try {
     // Initialize processors if needed
-    if (!builtInAIProcessor && !aiProcessor) {
+    if (!chromeNanoProcessor) {
       console.log(
         "SEQUENCE DEBUG: No processors initialized, calling initializeAI()"
       );
@@ -1154,59 +1152,55 @@ async function handleTextProcessing(request, sendResponse) {
     console.log("SEQUENCE DEBUG: Processing text length:", text.length);
     console.log("SEQUENCE DEBUG: Diagram type:", diagramType);
 
-    // Try built-in AI APIs first (hackathon requirement)
-    if (builtInAIProcessor && builtInAIProcessor.isAvailable) {
-      console.log("SEQUENCE DEBUG: Using built-in AI APIs for processing...");
+    // Try Chrome Nano AI first (hackathon requirement)
+    if (chromeNanoProcessor && chromeNanoProcessor.isAvailable) {
+      console.log("SEQUENCE DEBUG: Using Chrome Nano AI for processing...");
       console.log(
-        "SEQUENCE DEBUG: Built-in AI status:",
-        builtInAIProcessor.getStatus()
+        "SEQUENCE DEBUG: Chrome Nano status:",
+        chromeNanoProcessor.getStatus()
       );
 
       try {
         console.log(
-          "SEQUENCE DEBUG: Calling builtInAIProcessor.generateDiagramData()"
+          "SEQUENCE DEBUG: Calling chromeNanoProcessor.generateDiagramData()"
         );
-        const diagramData = await builtInAIProcessor.generateDiagramData(
+        const diagramData = await chromeNanoProcessor.generateDiagramData(
           text,
           diagramType
         );
-        console.log("SEQUENCE DEBUG: Built-in AI processing successful!");
+        console.log("SEQUENCE DEBUG: Chrome Nano processing successful!");
         console.log("SEQUENCE DEBUG: Generated diagram data:", diagramData);
 
         sendResponse({
           success: true,
           data: diagramData,
-          source: "builtin-apis",
+          source: "chrome-nano",
         });
         return;
-      } catch (builtInError) {
-        console.error(
-          "SEQUENCE DEBUG: Chrome built-in AI failed:",
-          builtInError
-        );
+      } catch (nanoError) {
+        console.error("SEQUENCE DEBUG: Chrome Nano AI failed:", nanoError);
         sendResponse({
           success: false,
-          error:
-            "Chrome built-in AI processing failed: " + builtInError.message,
-          source: "chrome-builtin-ai-error",
+          error: "Chrome Nano AI processing failed: " + nanoError.message,
+          source: "chrome-nano-error",
         });
         return;
       }
     } else {
-      console.log("SEQUENCE DEBUG: Chrome built-in AI not available");
-      console.log("SEQUENCE DEBUG: builtInAIProcessor:", builtInAIProcessor);
-      if (builtInAIProcessor) {
+      console.log("SEQUENCE DEBUG: Chrome Nano AI not available");
+      console.log("SEQUENCE DEBUG: chromeNanoProcessor:", chromeNanoProcessor);
+      if (chromeNanoProcessor) {
         console.log(
-          "SEQUENCE DEBUG: builtInAIProcessor.isAvailable:",
-          builtInAIProcessor.isAvailable
+          "SEQUENCE DEBUG: chromeNanoProcessor.isAvailable:",
+          chromeNanoProcessor.isAvailable
         );
       }
 
       sendResponse({
         success: false,
         error:
-          "Chrome built-in AI APIs not available. Please ensure Chrome 138+ with AI flags enabled: chrome://flags/#prompt-api-for-gemini-nano",
-        source: "chrome-builtin-ai-unavailable",
+          "Chrome Nano AI not available. Please ensure Chrome 127+ with AI flags enabled: chrome://flags/#prompt-api-for-gemini-nano",
+        source: "chrome-nano-unavailable",
       });
       return;
     }
@@ -1222,19 +1216,19 @@ async function handleTextProcessing(request, sendResponse) {
 // Handle AI availability check
 async function handleAICheck(sendResponse) {
   try {
-    if (!builtInAIProcessor) {
+    if (!chromeNanoProcessor) {
       await initializeAI();
     }
 
-    // Only check Chrome built-in AI status
-    const builtInStatus = builtInAIProcessor
-      ? builtInAIProcessor.getStatus()
+    // Only check Chrome Nano AI status
+    const nanoStatus = chromeNanoProcessor
+      ? chromeNanoProcessor.getStatus()
       : null;
 
     const status = {
-      available: builtInStatus && builtInStatus.available,
-      chromeBuiltInAI: builtInStatus,
-      hybrid: false, // No server fallback - Chrome built-in AI only
+      available: nanoStatus && nanoStatus.available,
+      chromeNanoAI: nanoStatus,
+      hybrid: false, // No server fallback - Chrome Nano AI only
     };
 
     sendResponse({
@@ -1262,12 +1256,12 @@ async function handleGenerateSummary(request, sendResponse) {
     );
 
     // Only use Chrome's built-in Summarizer API (Gemini Nano)
-    if (builtInAIProcessor && builtInAIProcessor.isAvailable) {
+    if (chromeNanoProcessor && chromeNanoProcessor.isAvailable) {
       try {
         console.log(
           "Background: Using Chrome built-in Summarizer API (Gemini Nano)..."
         );
-        const summaryResult = await builtInAIProcessor.generateSummary(
+        const summaryResult = await chromeNanoProcessor.generateSummary(
           text,
           length
         );
@@ -1290,7 +1284,7 @@ async function handleGenerateSummary(request, sendResponse) {
           success: false,
           error:
             "Chrome built-in AI summarization failed: " + builtInError.message,
-          source: "chrome-builtin-ai-error",
+          source: "chrome-nano-error",
         });
         return;
       }
@@ -1299,8 +1293,8 @@ async function handleGenerateSummary(request, sendResponse) {
       sendResponse({
         success: false,
         error:
-          "Chrome built-in AI APIs not available. Please ensure Chrome 138+ with AI flags enabled: chrome://flags/#prompt-api-for-gemini-nano",
-        source: "chrome-builtin-ai-unavailable",
+          "Chrome built-in AI APIs not available. Please ensure Chrome 127+ with AI flags enabled: chrome://flags/#prompt-api-for-gemini-nano",
+        source: "chrome-nano-unavailable",
       });
       return;
     }
