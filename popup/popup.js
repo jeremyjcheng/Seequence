@@ -290,12 +290,13 @@ document.addEventListener("DOMContentLoaded", async () => {
           return;
         }
 
-        if (!aiStatus.status.available) {
-          showError(
-            "AI processing not available. Please ensure Chrome flags are enabled and you have the required hardware."
-          );
-          return;
-        }
+        // Skip hardware availability check - always proceed
+        // if (!aiStatus.status.available) {
+        //   showError(
+        //     "AI processing not available. Please ensure Chrome flags are enabled and you have the required hardware."
+        //   );
+        //   return;
+        // }
 
         // Process text with AI
         const processResponse = await chrome.runtime.sendMessage({
