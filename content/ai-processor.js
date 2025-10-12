@@ -39,41 +39,41 @@ class ContentAIProcessor {
       // Check for Prompt API
       if ("ai" in navigator && "prompt" in navigator.ai) {
         availableAPIs.push("prompt");
-        console.log("✓ Found Prompt API");
+        console.log("Found Prompt API");
       } else {
-        console.log("✗ Prompt API not available");
+        console.log("Prompt API not available");
       }
 
       // Check for Summarizer API
       if ("ai" in navigator && "summarizer" in navigator.ai) {
         availableAPIs.push("summarizer");
-        console.log("✓ Found Summarizer API");
+        console.log("Found Summarizer API");
       } else {
-        console.log("✗ Summarizer API not available");
+        console.log("Summarizer API not available");
       }
 
       // Check for Translator API
       if ("ai" in navigator && "translator" in navigator.ai) {
         availableAPIs.push("translator");
-        console.log("✓ Found Translator API");
+        console.log("Found Translator API");
       } else {
-        console.log("✗ Translator API not available");
+        console.log("Translator API not available");
       }
 
       // Check for Writer API
       if ("ai" in navigator && "writer" in navigator.ai) {
         availableAPIs.push("writer");
-        console.log("✓ Found Writer API");
+        console.log("Found Writer API");
       } else {
-        console.log("✗ Writer API not available");
+        console.log("Writer API not available");
       }
 
       // Check for window.ai (Chrome Nano)
       if ("ai" in window && "languageModel" in window.ai) {
         availableAPIs.push("window.ai");
-        console.log("✓ Found window.ai languageModel");
+        console.log("Found window.ai languageModel");
       } else {
-        console.log("✗ window.ai languageModel not available");
+        console.log("window.ai languageModel not available");
       }
 
       this.availableAPIs = availableAPIs;
@@ -88,8 +88,8 @@ class ContentAIProcessor {
       if (availableAPIs.length > 0) {
         await this.testAPICalls(availableAPIs);
       } else {
-        console.log("⚠️ No AI APIs available - will use heuristic fallback");
-        console.log("💡 To enable AI APIs:");
+        console.log("No AI APIs available - will use heuristic fallback");
+        console.log("To enable AI APIs:");
         console.log("   1. Go to chrome://flags/");
         console.log("   2. Enable: #prompt-api-for-gemini-nano");
         console.log("   3. Enable: #optimization-guide-on-device-model");
@@ -127,21 +127,21 @@ class ContentAIProcessor {
             temperature: 0.7,
             topK: 40,
           });
-          console.log("✓ window.ai test successful");
+          console.log("window.ai test successful");
         } else if (api === "prompt") {
           console.log("Testing navigator.ai.prompt...");
           const result = await navigator.ai.prompt("Test prompt");
-          console.log("✓ navigator.ai.prompt test successful");
+          console.log("navigator.ai.prompt test successful");
         } else if (api === "summarizer") {
           console.log("Testing navigator.ai.summarizer...");
           const result = await navigator.ai.summarizer.summarize({
             text: "Test text for summarization",
             maxLength: 50,
           });
-          console.log("✓ navigator.ai.summarizer test successful");
+          console.log("navigator.ai.summarizer test successful");
         }
       } catch (error) {
-        console.log(`✗ ${api} test failed:`, error.message);
+        console.log(`${api} test failed:`, error.message);
       }
     }
   }
@@ -843,3 +843,68 @@ if (document.readyState === "loading") {
 } else {
   window.contentAIProcessor.checkAvailability();
 }
+
+// Bridge: listen for requests from the content script (isolated world) and respond via postMessage
+window.addEventListener("message", async (event) => {
+  if (event.source !== window) return;
+  const data = event.data;
+  if (!data || data.__seequence !== true) return;
+
+  const requestId = data.requestId;
+  try {
+    if (data.action === "checkAvailability") {
+      await window.contentAIProcessor.checkAvailability();
+      window.postMessage(
+        {
+          __seequence: true,
+          type: "response",
+          requestId,
+          success: true,
+          data: window.contentAIProcessor.getStatus(),
+        },
+        "*"
+      );
+    } else if (data.action === "analyze") {
+      const diagramData = await window.contentAIProcessor.generateDiagramData(
+        data.text,
+        data.diagramType
+      );
+      window.postMessage(
+        {
+          __seequence: true,
+          type: "response",
+          requestId,
+          success: true,
+          data: diagramData,
+        },
+        "*"
+      );
+    } else if (data.action === "summarize") {
+      const summary = await window.contentAIProcessor.generateSummary(
+        data.text,
+        data.length
+      );
+      window.postMessage(
+        {
+          __seequence: true,
+          type: "response",
+          requestId,
+          success: true,
+          data: summary,
+        },
+        "*"
+      );
+    }
+  } catch (error) {
+    window.postMessage(
+      {
+        __seequence: true,
+        type: "response",
+        requestId,
+        success: false,
+        error: error.message,
+      },
+      "*"
+    );
+  }
+});

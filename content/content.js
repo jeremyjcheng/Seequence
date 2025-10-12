@@ -14,15 +14,56 @@ const script = document.createElement("script");
 script.src = chrome.runtime.getURL("content/ai-processor.js");
 script.onload = function () {
   console.log("Content: AI Processor script loaded successfully");
-  console.log(
-    "Content: window.contentAIProcessor available:",
-    !!window.contentAIProcessor
-  );
 };
 script.onerror = function (error) {
   console.error("Content: Failed to load AI processor script:", error);
 };
 document.head.appendChild(script);
+
+// Bridge to communicate with the main-world AI processor via postMessage
+const pendingRequests = new Map();
+window.addEventListener("message", (event) => {
+  if (event.source !== window) return; // only accept messages from same page
+  const data = event.data;
+  if (!data || data.__seequence !== true || data.type !== "response") return;
+
+  const { requestId, success } = data;
+  const entry = pendingRequests.get(requestId);
+  if (!entry) return;
+  pendingRequests.delete(requestId);
+
+  if (success) {
+    entry.resolve(data.data);
+  } else {
+    entry.reject(new Error(data.error || "Main world AI error"));
+  }
+});
+
+function sendToMainWorld(action, payload = {}, timeoutMs = 15000) {
+  return new Promise((resolve, reject) => {
+    const requestId = `${Date.now()}_${Math.random().toString(36).slice(2)}`;
+    const timer = setTimeout(() => {
+      pendingRequests.delete(requestId);
+      reject(new Error(`Main world AI timeout for action: ${action}`));
+    }, timeoutMs);
+
+    pendingRequests.set(requestId, {
+      resolve: (value) => {
+        clearTimeout(timer);
+        resolve(value);
+      },
+      reject: (err) => {
+        clearTimeout(timer);
+        reject(err);
+      },
+    });
+
+    window.postMessage(
+      { __seequence: true, action, requestId, ...payload },
+      "*"
+    );
+  });
+}
 
 // Listen for messages from popup
 console.log("Content: Setting up message listener...");
@@ -88,62 +129,32 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
 // Process text using AI
 async function processTextWithAI(text, diagramType) {
   console.log("Content script: Processing text with AI");
+  // Ensure main-world AI is initialized
+  console.log("Content script: Requesting AI availability in main world...");
+  await sendToMainWorld("checkAvailability");
 
-  // Wait for AI processor to be available
-  let attempts = 0;
-  while (!window.contentAIProcessor && attempts < 50) {
-    await new Promise((resolve) => setTimeout(resolve, 100));
-    attempts++;
-  }
-
-  if (!window.contentAIProcessor) {
-    throw new Error("AI processor not available");
-  }
-
-  // Check if AI is available
-  if (!window.contentAIProcessor.isAvailable) {
-    console.log("Content script: AI not available, checking...");
-    await window.contentAIProcessor.checkAvailability();
-  }
-
-  // Generate diagram data
-  const diagramData = await window.contentAIProcessor.generateDiagramData(
+  // Generate diagram data via main world
+  const diagramData = await sendToMainWorld("analyze", {
     text,
-    diagramType
-  );
+    diagramType,
+  });
   console.log("Content script: Generated diagram data:", diagramData);
-
   return diagramData;
 }
 
 // Generate summary using AI
 async function generateSummaryWithAI(text, length) {
   console.log("Content script: Generating summary with AI");
+  // Ensure main-world AI is initialized
+  console.log("Content script: Requesting AI availability in main world...");
+  await sendToMainWorld("checkAvailability");
 
-  // Wait for AI processor to be available
-  let attempts = 0;
-  while (!window.contentAIProcessor && attempts < 50) {
-    await new Promise((resolve) => setTimeout(resolve, 100));
-    attempts++;
-  }
-
-  if (!window.contentAIProcessor) {
-    throw new Error("AI processor not available");
-  }
-
-  // Check if AI is available
-  if (!window.contentAIProcessor.isAvailable) {
-    console.log("Content script: AI not available, checking...");
-    await window.contentAIProcessor.checkAvailability();
-  }
-
-  // Generate summary
-  const summaryResult = await window.contentAIProcessor.generateSummary(
+  // Generate summary via main world
+  const summaryResult = await sendToMainWorld("summarize", {
     text,
-    length
-  );
+    length,
+  });
   console.log("Content script: Generated summary:", summaryResult);
-
   return summaryResult;
 }
 
