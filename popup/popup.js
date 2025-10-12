@@ -2,14 +2,23 @@
 // Handles UI interactions and communication with content script
 
 document.addEventListener("DOMContentLoaded", async () => {
+  console.log("=== POPUP INITIALIZATION START ===");
+  console.log("Popup: DOM loaded, initializing...");
+  console.log("Popup: Chrome runtime available:", !!chrome.runtime);
+  console.log("Popup: Chrome tabs available:", !!chrome.tabs);
+  console.log("Popup: Window location:", window.location.href);
+
   // Check if D3 loaded successfully
   if (typeof d3 === "undefined") {
-    console.error("D3.js failed to load");
+    console.error(
+      "D3.js failed to load - this will cause diagram rendering issues"
+    );
   } else {
-    console.log("D3.js loaded successfully");
+    console.log("D3.js loaded successfully, version:", d3.version);
   }
 
   // Get references to UI elements
+  console.log("Popup: Getting UI element references...");
   const noSelectionDiv = document.getElementById("no-selection");
   const hasSelectionDiv = document.getElementById("has-selection");
   const processingDiv = document.getElementById("processing");
@@ -26,6 +35,22 @@ document.addEventListener("DOMContentLoaded", async () => {
     "summary-length-diagram"
   );
   let summaryLength = "short"; // default
+
+  // Debug UI element availability
+  console.log("Popup: UI elements found:");
+  console.log("  - noSelectionDiv:", !!noSelectionDiv);
+  console.log("  - hasSelectionDiv:", !!hasSelectionDiv);
+  console.log("  - processingDiv:", !!processingDiv);
+  console.log("  - diagramViewDiv:", !!diagramViewDiv);
+  console.log("  - selectedTextElement:", !!selectedTextElement);
+  console.log("  - createDiagramButton:", !!createDiagramButton);
+  console.log("  - resetSelectionButton:", !!resetSelectionButton);
+  console.log("  - switchTypeButton:", !!switchTypeButton);
+  console.log("  - exportDiagramButton:", !!exportDiagramButton);
+  console.log("  - layoutSelect:", !!layoutSelect);
+  console.log("  - diagramTitleElement:", !!diagramTitleElement);
+  console.log("  - summaryLengthContainer:", !!summaryLengthContainer);
+  console.log("  - summaryLengthOverlay:", !!summaryLengthOverlay);
 
   // Initialize diagram renderer
   let diagramRenderer = null;
@@ -87,31 +112,55 @@ document.addEventListener("DOMContentLoaded", async () => {
   }
 
   async function checkForSelectedText() {
+    console.log("=== CHECKING FOR SELECTED TEXT ===");
     try {
       // Get the active tab
+      console.log("Popup: Querying for active tab...");
       const [tab] = await chrome.tabs.query({
         active: true,
         currentWindow: true,
       });
+      console.log("Popup: Active tab found:", {
+        id: tab.id,
+        url: tab.url,
+        title: tab.title,
+      });
 
       // Check if content script is available
       try {
+        console.log("Popup: Sending message to content script...");
         // Send message to content script to get selected text
         const response = await chrome.tabs.sendMessage(tab.id, {
           action: "getSelectedText",
         });
+        console.log("Popup: Content script response:", response);
 
         if (response && response.selectedText && response.selectedText.trim()) {
+          console.log(
+            "Popup: Text selected, length:",
+            response.selectedText.length
+          );
+          console.log(
+            "Popup: Selected text preview:",
+            response.selectedText.substring(0, 100) + "..."
+          );
           showSelectedText(response.selectedText);
         } else {
+          console.log("Popup: No text selected or empty selection");
           showNoSelection();
         }
       } catch (contentScriptError) {
-        console.log("Content script not available, showing no selection state");
+        console.log(
+          "Popup: Content script not available:",
+          contentScriptError.message
+        );
+        console.log(
+          "Popup: This might be normal if no content script is injected yet"
+        );
         showNoSelection();
       }
     } catch (error) {
-      console.error("Error checking for selected text:", error);
+      console.error("Popup: Error checking for selected text:", error);
       showNoSelection();
     }
   }
@@ -253,22 +302,36 @@ document.addEventListener("DOMContentLoaded", async () => {
   }
 
   async function handleCreateDiagram() {
+    console.log("=== CREATE DIAGRAM CLICKED ===");
     try {
+      console.log("Popup: Showing processing state...");
       showProcessing();
 
       // Get the active tab
+      console.log("Popup: Querying for active tab...");
       const [tab] = await chrome.tabs.query({
         active: true,
         currentWindow: true,
+      });
+      console.log("Popup: Active tab for diagram creation:", {
+        id: tab.id,
+        url: tab.url,
+        title: tab.title,
       });
 
       // Send message to content script to get the full selected text
       let response;
       try {
+        console.log("Popup: Requesting selected text from content script...");
         response = await chrome.tabs.sendMessage(tab.id, {
           action: "getSelectedText",
         });
+        console.log("Popup: Selected text response:", response);
       } catch (contentScriptError) {
+        console.error(
+          "Popup: Content script communication failed:",
+          contentScriptError
+        );
         showError(
           "Content script not available. Please refresh the page and try again."
         );
@@ -276,16 +339,25 @@ document.addEventListener("DOMContentLoaded", async () => {
       }
 
       if (response && response.selectedText) {
-        console.log("Selected text length:", response.selectedText.length);
+        console.log(
+          "Popup: Selected text length:",
+          response.selectedText.length
+        );
+        console.log(
+          "Popup: Selected text preview:",
+          response.selectedText.substring(0, 200) + "..."
+        );
 
         // Check AI availability first
+        console.log("Popup: Checking AI availability...");
         const aiStatus = await chrome.runtime.sendMessage({
           action: "checkAIAvailability",
         });
 
-        console.log("AI Status response:", aiStatus);
+        console.log("Popup: AI Status response:", aiStatus);
 
         if (!aiStatus.success) {
+          console.error("Popup: AI check failed:", aiStatus.error);
           showError(`AI check failed: ${aiStatus.error}`);
           return;
         }

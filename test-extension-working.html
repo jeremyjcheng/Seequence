@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Seequence Extension Test</title>
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+        max-width: 800px;
+        margin: 0 auto;
+        padding: 20px;
+        line-height: 1.6;
+      }
+      .test-section {
+        margin: 20px 0;
+        padding: 15px;
+        border: 1px solid #ddd;
+        border-radius: 5px;
+      }
+      .instructions {
+        background-color: #f0f8ff;
+        padding: 15px;
+        border-radius: 5px;
+        margin-bottom: 20px;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>Seequence Extension Test Page</h1>
+
+    <div class="instructions">
+      <h3>How to Test:</h3>
+      <ol>
+        <li>Make sure the Seequence extension is loaded in Chrome</li>
+        <li>Select any text below (highlight it with your mouse)</li>
+        <li>Click the Seequence extension icon in the toolbar</li>
+        <li>Click "Generate Diagram" to test the extension</li>
+      </ol>
+    </div>
+
+    <div class="test-section">
+      <h2>Test Text 1: Simple Process</h2>
+      <p>
+        The water cycle is a continuous process that involves evaporation,
+        condensation, and precipitation. First, water from oceans and lakes
+        evaporates due to heat from the sun. Next, the water vapor rises into
+        the atmosphere where it cools and condenses into clouds. Finally, when
+        the clouds become heavy enough, precipitation occurs in the form of
+        rain, snow, or hail, returning water to the Earth's surface.
+      </p>
+    </div>
+
+    <div class="test-section">
+      <h2>Test Text 2: Historical Timeline</h2>
+      <p>
+        The Renaissance period began in Italy during the 14th century and spread
+        throughout Europe. In 1401, Filippo Brunelleschi won the competition for
+        the Florence Baptistery doors. By 1503, Leonardo da Vinci had completed
+        the Mona Lisa. In 1512, Michelangelo finished painting the Sistine
+        Chapel ceiling. The Renaissance continued until the 17th century,
+        influencing art, science, and philosophy across Europe.
+      </p>
+    </div>
+
+    <div class="test-section">
+      <h2>Test Text 3: Cause and Effect</h2>
+      <p>
+        Climate change is caused by increased greenhouse gas emissions from
+        human activities. These emissions trap heat in the Earth's atmosphere,
+        leading to global temperature rise. As temperatures increase, polar ice
+        caps melt, causing sea levels to rise. Rising sea levels result in
+        coastal flooding and displacement of communities. Additionally, climate
+        change affects weather patterns, leading to more frequent and severe
+        storms, droughts, and heatwaves.
+      </p>
+    </div>
+
+    <div class="test-section">
+      <h2>Test Text 4: Comparison</h2>
+      <p>
+        Renewable energy sources like solar and wind power offer several
+        advantages over fossil fuels. Solar energy is clean and abundant, but
+        requires large land areas and depends on weather conditions. Wind energy
+        is cost-effective and produces no emissions, yet can be noisy and
+        requires specific locations. Fossil fuels are reliable and energy-dense,
+        but produce harmful emissions and are finite resources. Nuclear power
+        provides consistent energy output but poses safety and waste disposal
+        challenges.
+      </p>
+    </div>
+
+    <script>
+      // Test if extension is working
+      console.log(
+        "Test page loaded. Select text and click the Seequence extension icon to test."
+      );
+
+      // Add some visual feedback
+      document.addEventListener("mouseup", function () {
+        const selection = window.getSelection();
+        if (selection.toString().trim()) {
+          console.log(
+            "Text selected:",
+            selection.toString().substring(0, 50) + "..."
+          );
+        }
+      });
+    </script>
+  </body>
+</html>

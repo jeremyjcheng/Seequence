@@ -1134,23 +1134,30 @@ chrome.action.onClicked.addListener((tab) => {
 
 // Handle messages from content scripts or popup
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
-  console.log("Background received message:", request);
+  console.log("=== BACKGROUND MESSAGE RECEIVED ===");
+  console.log("Background: Message action:", request.action);
+  console.log("Background: Sender:", sender);
+  console.log("Background: Full request:", request);
 
   switch (request.action) {
     case "processText":
+      console.log("Background: Handling processText request");
       handleTextProcessing(request, sendResponse);
       return true; // Keep message channel open for async response
     case "checkAIAvailability":
+      console.log("Background: Handling checkAIAvailability request");
       handleAICheck(sendResponse);
       return true;
     case "generateSummary":
+      console.log("Background: Handling generateSummary request");
       handleGenerateSummary(request, sendResponse);
       return true;
     case "saveDiagram":
+      console.log("Background: Handling saveDiagram request");
       handleSaveDiagram(request, sendResponse);
       break;
     default:
-      console.log("Unknown action:", request.action);
+      console.log("Background: Unknown action:", request.action);
       sendResponse({ success: false, error: "Unknown action" });
   }
 });
@@ -1275,48 +1282,54 @@ async function handleGenerateSummary(request, sendResponse) {
       text.substring(0, 100) + "..."
     );
 
-    // Only use Chrome's built-in Summarizer API (Gemini Nano)
-    if (chromeNanoProcessor && chromeNanoProcessor.isAvailable) {
-      try {
+    // Delegate summary generation to content script (same as diagram generation)
+    console.log(
+      "Background: Delegating summary generation to content script..."
+    );
+
+    try {
+      const [tab] = await chrome.tabs.query({
+        active: true,
+        currentWindow: true,
+      });
+
+      const response = await chrome.tabs.sendMessage(tab.id, {
+        action: "generateSummary",
+        text: text,
+        length: length,
+      });
+
+      if (response && response.success) {
         console.log(
-          "Background: Using Chrome built-in Summarizer API (Gemini Nano)..."
-        );
-        const summaryResult = await chromeNanoProcessor.generateSummary(
-          text,
-          length
-        );
-        console.log(
-          "Background: Chrome built-in summarizer succeeded:",
-          summaryResult.summary
+          "Background: Content script summary generation successful!"
         );
         sendResponse({
           success: true,
-          summary: summaryResult.summary,
-          source: "chrome-builtin-summarizer",
+          summary: response.summary,
+          source: response.source || "content-ai",
         });
-        return;
-      } catch (builtInError) {
-        console.log(
-          "Background: Chrome built-in summarizer failed:",
-          builtInError.message
+      } else {
+        console.error(
+          "Background: Content script summary generation failed:",
+          response?.error
         );
         sendResponse({
           success: false,
-          error:
-            "Chrome built-in AI summarization failed: " + builtInError.message,
-          source: "chrome-nano-error",
+          error: response?.error || "Content script summary generation failed",
+          source: "content-ai-error",
         });
-        return;
       }
-    } else {
-      console.log("Background: Chrome built-in AI not available");
+    } catch (messageError) {
+      console.error(
+        "Background: Failed to communicate with content script for summary:",
+        messageError
+      );
       sendResponse({
         success: false,
         error:
-          "Chrome built-in AI APIs not available. Please ensure Chrome 127+ with AI flags enabled: chrome://flags/#prompt-api-for-gemini-nano",
-        source: "chrome-nano-unavailable",
+          "Failed to communicate with content script: " + messageError.message,
+        source: "communication-error",
       });
-      return;
     }
   } catch (error) {
     console.error("Error generating summary:", error);

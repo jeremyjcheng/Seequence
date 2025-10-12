@@ -1,8 +1,14 @@
 // AI Processor for Content Script Context
 // This runs in the main thread where AI APIs are available
 
+console.log("=== AI PROCESSOR INITIALIZATION ===");
+console.log("AI Processor: Script loaded on:", window.location.href);
+console.log("AI Processor: window.ai available:", "ai" in window);
+console.log("AI Processor: navigator.ai available:", "ai" in navigator);
+
 class ContentAIProcessor {
   constructor() {
+    console.log("AI Processor: Constructor called");
     this.isAvailable = false;
     this.availableAPIs = [];
     this.performanceMetrics = {
@@ -10,6 +16,7 @@ class ContentAIProcessor {
       averageResponseTime: 0,
       totalResponseTime: 0,
     };
+    console.log("AI Processor: Instance created");
   }
 
   // Check what AI APIs are available in content script context
@@ -311,6 +318,154 @@ class ContentAIProcessor {
       edges,
       type: analysis.type,
       source: analysis.source,
+    };
+  }
+
+  // Generate summary using available APIs
+  async generateSummary(text, length = "short") {
+    const startTime = performance.now();
+
+    try {
+      // Always try AI APIs first, regardless of hardware checks
+      // Try Summarizer API first
+      if (this.availableAPIs.includes("summarizer")) {
+        try {
+          return await this.summarizeWithSummarizerAPI(text, length);
+        } catch (error) {
+          console.log(
+            "Summarizer API failed, trying next option:",
+            error.message
+          );
+        }
+      }
+
+      // Try Prompt API
+      if (this.availableAPIs.includes("prompt")) {
+        try {
+          return await this.summarizeWithPromptAPI(text, length);
+        } catch (error) {
+          console.log("Prompt API failed, trying next option:", error.message);
+        }
+      }
+
+      // Try window.ai if available
+      if (this.availableAPIs.includes("window.ai")) {
+        try {
+          return await this.summarizeWithWindowAI(text, length);
+        } catch (error) {
+          console.log("window.ai failed, trying next option:", error.message);
+        }
+      }
+
+      // Fallback to heuristic
+      console.log("All AI APIs failed, using heuristic fallback for summary");
+      return await this.summarizeHeuristic(text, length);
+    } catch (error) {
+      console.error(
+        "All summary methods failed, using heuristic fallback:",
+        error
+      );
+      return await this.summarizeHeuristic(text, length);
+    } finally {
+      const responseTime = performance.now() - startTime;
+      this.performanceMetrics.totalRequests++;
+      this.performanceMetrics.totalResponseTime += responseTime;
+      this.performanceMetrics.averageResponseTime =
+        this.performanceMetrics.totalResponseTime /
+        this.performanceMetrics.totalRequests;
+    }
+  }
+
+  // Summarize using Summarizer API
+  async summarizeWithSummarizerAPI(text, length) {
+    try {
+      const maxLength =
+        length === "short" ? 100 : length === "medium" ? 200 : 300;
+      const summary = await navigator.ai.summarizer.summarize({
+        text: text,
+        maxLength: maxLength,
+      });
+
+      return {
+        summary: summary,
+        source: "summarizer-api",
+      };
+    } catch (error) {
+      console.error("Summarizer API summary failed:", error);
+      throw error;
+    }
+  }
+
+  // Summarize using Prompt API
+  async summarizeWithPromptAPI(text, length) {
+    try {
+      const lengthInstruction =
+        length === "short"
+          ? "in 1-2 sentences"
+          : length === "medium"
+          ? "in 2-3 sentences"
+          : "in 3-4 sentences";
+
+      const prompt = `Summarize the following text ${lengthInstruction}:\n\n${text}`;
+
+      const result = await navigator.ai.prompt(prompt);
+
+      return {
+        summary: result,
+        source: "prompt-api",
+      };
+    } catch (error) {
+      console.error("Prompt API summary failed:", error);
+      throw error;
+    }
+  }
+
+  // Summarize using window.ai
+  async summarizeWithWindowAI(text, length) {
+    if (!this.session) {
+      this.session = await window.ai.languageModel.create({
+        temperature: 0.7,
+        topK: 40,
+      });
+    }
+
+    const lengthInstruction =
+      length === "short"
+        ? "in 1-2 sentences"
+        : length === "medium"
+        ? "in 2-3 sentences"
+        : "in 3-4 sentences";
+
+    const prompt = `Summarize the following text ${lengthInstruction}:\n\n${text}`;
+
+    try {
+      const result = await this.session.prompt(prompt);
+      return {
+        summary: result,
+        source: "window.ai",
+      };
+    } catch (error) {
+      console.error("window.ai summary failed:", error);
+      throw error;
+    }
+  }
+
+  // Heuristic summary fallback
+  async summarizeHeuristic(text, length) {
+    const sentences = text.split(/[.!?]+/).filter((s) => s.trim().length > 0);
+
+    let summary;
+    if (length === "short") {
+      summary = sentences[0] || text.substring(0, 100) + "...";
+    } else if (length === "medium") {
+      summary = sentences.slice(0, 2).join(". ") + ".";
+    } else {
+      summary = sentences.slice(0, 3).join(". ") + ".";
+    }
+
+    return {
+      summary: summary.trim(),
+      source: "heuristic",
     };
   }
 
