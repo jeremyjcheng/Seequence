@@ -1161,99 +1161,68 @@ async function handleTextProcessing(request, sendResponse) {
   console.log("SEQUENCE DEBUG: Request:", request);
 
   try {
-    // Initialize processors if needed
-    if (!chromeNanoProcessor && !fallbackAIProcessor) {
-      console.log(
-        "SEQUENCE DEBUG: No processors initialized, calling initializeAI()"
-      );
-      await initializeAI();
-    }
-
     const { text, diagramType } = request;
     console.log("SEQUENCE DEBUG: Processing text length:", text.length);
     console.log("SEQUENCE DEBUG: Diagram type:", diagramType);
 
-    // Try Chrome Nano AI first (hackathon requirement)
-    if (chromeNanoProcessor && chromeNanoProcessor.isAvailable) {
-      console.log("SEQUENCE DEBUG: Using Chrome Nano AI for processing...");
-      console.log(
-        "SEQUENCE DEBUG: Chrome Nano status:",
-        chromeNanoProcessor.getStatus()
-      );
+    // Delegate AI processing to content script where AI APIs are available
+    console.log(
+      "SEQUENCE DEBUG: Delegating AI processing to content script..."
+    );
 
-      try {
-        console.log(
-          "SEQUENCE DEBUG: Calling chromeNanoProcessor.generateDiagramData()"
-        );
-        const diagramData = await chromeNanoProcessor.generateDiagramData(
-          text,
-          diagramType
-        );
-        console.log("SEQUENCE DEBUG: Chrome Nano processing successful!");
-        console.log("SEQUENCE DEBUG: Generated diagram data:", diagramData);
+    // Get the active tab
+    const [tab] = await chrome.tabs.query({
+      active: true,
+      currentWindow: true,
+    });
 
+    if (!tab) {
+      sendResponse({
+        success: false,
+        error: "No active tab found",
+        source: "no-tab-error",
+      });
+      return;
+    }
+
+    // Send message to content script for AI processing
+    try {
+      const response = await chrome.tabs.sendMessage(tab.id, {
+        action: "processText",
+        text: text,
+        diagramType: diagramType,
+      });
+
+      if (response.success) {
+        console.log("SEQUENCE DEBUG: Content script AI processing successful!");
+        console.log("SEQUENCE DEBUG: Generated diagram data:", response.data);
         sendResponse({
           success: true,
-          data: diagramData,
-          source: "chrome-nano",
+          data: response.data,
+          source: "content-ai",
         });
-        return;
-      } catch (nanoError) {
-        console.error("SEQUENCE DEBUG: Chrome Nano AI failed:", nanoError);
+      } else {
+        console.error(
+          "SEQUENCE DEBUG: Content script AI processing failed:",
+          response.error
+        );
         sendResponse({
           success: false,
-          error: "Chrome Nano AI processing failed: " + nanoError.message,
-          source: "chrome-nano-error",
+          error: response.error,
+          source: "content-ai-error",
         });
-        return;
       }
-    } else {
-      console.log("SEQUENCE DEBUG: Chrome Nano AI not available");
-      console.log("SEQUENCE DEBUG: chromeNanoProcessor:", chromeNanoProcessor);
-      if (chromeNanoProcessor) {
-        console.log(
-          "SEQUENCE DEBUG: chromeNanoProcessor.isAvailable:",
-          chromeNanoProcessor.isAvailable
-        );
-      }
-
-      // Try fallback AI processor
-      if (fallbackAIProcessor && fallbackAIProcessor.isAvailable) {
-        console.log(
-          "SEQUENCE DEBUG: Using Fallback AI Processor for processing..."
-        );
-        try {
-          const diagramData = await fallbackAIProcessor.generateDiagramData(
-            text,
-            diagramType
-          );
-          console.log("SEQUENCE DEBUG: Fallback AI processing successful!");
-          console.log("SEQUENCE DEBUG: Generated diagram data:", diagramData);
-
-          sendResponse({
-            success: true,
-            data: diagramData,
-            source: "fallback-ai",
-          });
-          return;
-        } catch (fallbackError) {
-          console.error("SEQUENCE DEBUG: Fallback AI failed:", fallbackError);
-          sendResponse({
-            success: false,
-            error: "AI processing failed: " + fallbackError.message,
-            source: "fallback-ai-error",
-          });
-          return;
-        }
-      }
-
+    } catch (messageError) {
+      console.error(
+        "SEQUENCE DEBUG: Failed to communicate with content script:",
+        messageError
+      );
       sendResponse({
         success: false,
         error:
-          "No AI processors available. Please ensure Chrome 127+ with AI flags enabled: chrome://flags/#prompt-api-for-gemini-nano",
-        source: "no-ai-available",
+          "Failed to communicate with content script: " + messageError.message,
+        source: "communication-error",
       });
-      return;
     }
   } catch (error) {
     console.error("Error processing text:", error);

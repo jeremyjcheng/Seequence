@@ -1,8 +1,7 @@
-// Fallback AI Processor for Seequence Extension
-// Uses available Chrome AI APIs or heuristic fallback
-// Designed to work on any Chrome version
+// AI Processor for Content Script Context
+// This runs in the main thread where AI APIs are available
 
-class FallbackAIProcessor {
+class ContentAIProcessor {
   constructor() {
     this.isAvailable = false;
     this.availableAPIs = [];
@@ -13,29 +12,56 @@ class FallbackAIProcessor {
     };
   }
 
-  // Check what AI APIs are available
+  // Check what AI APIs are available in content script context
   async checkAvailability() {
-    console.log("Fallback AI Processor: Checking availability...");
+    console.log("Content AI Processor: Checking availability...");
 
     try {
-      // In service worker context, we can't access window.ai or navigator.ai
-      // These APIs are only available in the main thread/extension pages
+      const availableAPIs = [];
+
+      // Check for Prompt API
+      if ("ai" in navigator && "prompt" in navigator.ai) {
+        availableAPIs.push("prompt");
+        console.log("Found Prompt API");
+      }
+
+      // Check for Summarizer API
+      if ("ai" in navigator && "summarizer" in navigator.ai) {
+        availableAPIs.push("summarizer");
+        console.log("Found Summarizer API");
+      }
+
+      // Check for Translator API
+      if ("ai" in navigator && "translator" in navigator.ai) {
+        availableAPIs.push("translator");
+        console.log("Found Translator API");
+      }
+
+      // Check for Writer API
+      if ("ai" in navigator && "writer" in navigator.ai) {
+        availableAPIs.push("writer");
+        console.log("Found Writer API");
+      }
+
+      // Check for window.ai (Chrome Nano)
+      if ("ai" in window && "languageModel" in window.ai) {
+        availableAPIs.push("window.ai");
+        console.log("Found window.ai languageModel");
+      }
+
+      this.availableAPIs = availableAPIs;
+      this.isAvailable = availableAPIs.length > 0;
+
+      console.log("Available APIs:", availableAPIs);
       console.log(
-        "Fallback AI Processor: Service worker context - AI APIs not available"
+        "Content AI Processor:",
+        this.isAvailable ? "Available" : "Not Available"
       );
-      console.log("Fallback AI Processor: AI APIs require main thread context");
-
-      // For now, we'll use heuristic fallback
-      this.availableAPIs = ["heuristic"];
-      this.isAvailable = true; // Heuristic is always available
-
-      console.log("Available APIs:", this.availableAPIs);
-      console.log("Fallback AI Processor: Using heuristic fallback");
 
       return this.isAvailable;
     } catch (error) {
       console.log(
-        "Fallback AI Processor: Error checking availability -",
+        "Content AI Processor: Error checking availability -",
         error.message
       );
       this.isAvailable = false;
@@ -45,17 +71,28 @@ class FallbackAIProcessor {
 
   // Analyze text structure using available APIs
   async analyzeTextStructure(text) {
+    if (!this.isAvailable) {
+      return await this.analyzeHeuristic(text);
+    }
+
     const startTime = performance.now();
 
     try {
-      // In service worker context, always use heuristic analysis
-      console.log(
-        "Fallback AI Processor: Using heuristic analysis (service worker context)"
-      );
+      // Try Prompt API first
+      if (this.availableAPIs.includes("prompt")) {
+        return await this.analyzeWithPromptAPI(text);
+      }
+
+      // Try window.ai if available
+      if (this.availableAPIs.includes("window.ai")) {
+        return await this.analyzeWithWindowAI(text);
+      }
+
+      // Fallback to heuristic
       return await this.analyzeHeuristic(text);
     } catch (error) {
-      console.error("Heuristic analysis failed:", error);
-      throw error;
+      console.error("AI analysis failed, using heuristic fallback:", error);
+      return await this.analyzeHeuristic(text);
     } finally {
       const responseTime = performance.now() - startTime;
       this.performanceMetrics.totalRequests++;
@@ -172,113 +209,6 @@ class FallbackAIProcessor {
     };
   }
 
-  // Generate summary using available APIs
-  async generateSummary(text, length = "short") {
-    const startTime = performance.now();
-
-    try {
-      // In service worker context, always use heuristic summarization
-      console.log(
-        "Fallback AI Processor: Using heuristic summarization (service worker context)"
-      );
-      return await this.summarizeHeuristic(text, length);
-    } catch (error) {
-      console.error("Heuristic summarization failed:", error);
-      throw error;
-    } finally {
-      const responseTime = performance.now() - startTime;
-      this.performanceMetrics.totalRequests++;
-      this.performanceMetrics.totalResponseTime += responseTime;
-      this.performanceMetrics.averageResponseTime =
-        this.performanceMetrics.totalResponseTime /
-        this.performanceMetrics.totalRequests;
-    }
-  }
-
-  // Summarize using Summarizer API
-  async summarizeWithAPI(text, length) {
-    const lengthMapping = {
-      short: 100,
-      medium: 200,
-      long: 300,
-    };
-
-    const maxLength = lengthMapping[length] || 150;
-
-    try {
-      const result = await navigator.ai.summarizer.summarize({
-        text: text,
-        maxLength: maxLength,
-      });
-
-      return {
-        summary: result,
-        originalLength: text.length,
-        summaryLength: result.length,
-        compressionRatio: result.length / text.length,
-        source: "summarizer-api",
-      };
-    } catch (error) {
-      console.error("Summarizer API failed:", error);
-      throw error;
-    }
-  }
-
-  // Summarize using Prompt API
-  async summarizeWithPromptAPI(text, length) {
-    const lengthMapping = {
-      short: "in 2-3 sentences",
-      medium: "in 4-5 sentences",
-      long: "in 6-8 sentences",
-    };
-
-    const prompt = `Summarize this text ${
-      lengthMapping[length] || lengthMapping.short
-    }:
-
-    "${text}"
-
-    Return only the summary text.`;
-
-    try {
-      const summary = await navigator.ai.prompt.prompt({
-        prompt: prompt,
-      });
-
-      return {
-        summary,
-        originalLength: text.length,
-        summaryLength: summary.length,
-        compressionRatio: summary.length / text.length,
-        source: "prompt-api",
-      };
-    } catch (error) {
-      console.error("Prompt API summarization failed:", error);
-      throw error;
-    }
-  }
-
-  // Heuristic summarization fallback
-  async summarizeHeuristic(text, length) {
-    const sentences = text.split(/[.!?]+/).filter((s) => s.trim().length > 0);
-    const lengthMapping = {
-      short: 2,
-      medium: 3,
-      long: 4,
-    };
-
-    const summaryLength = lengthMapping[length] || 2;
-    const summary = sentences.slice(0, summaryLength).join(". ") + ".";
-
-    return {
-      summary,
-      originalLength: text.length,
-      summaryLength: summary.length,
-      compressionRatio: summary.length / text.length,
-      source: "heuristic",
-    };
-  }
-
   // Generate diagram data
   async generateDiagramData(text, diagramType = "auto") {
     try {
@@ -334,14 +264,19 @@ class FallbackAIProcessor {
       available: this.isAvailable,
       availableAPIs: this.availableAPIs,
       performance: this.performanceMetrics,
-      source: "fallback-ai",
+      source: "content-ai",
     };
   }
 }
 
-// Export for use in background script
-if (typeof module !== "undefined" && module.exports) {
-  module.exports = FallbackAIProcessor;
-} else if (typeof self !== "undefined") {
-  self.FallbackAIProcessor = FallbackAIProcessor;
+// Create global instance
+window.contentAIProcessor = new ContentAIProcessor();
+
+// Initialize when DOM is ready
+if (document.readyState === "loading") {
+  document.addEventListener("DOMContentLoaded", () => {
+    window.contentAIProcessor.checkAvailability();
+  });
+} else {
+  window.contentAIProcessor.checkAvailability();
 }

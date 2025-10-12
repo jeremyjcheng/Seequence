@@ -18,40 +18,15 @@ class ChromeNanoProcessor {
     console.log("Chrome Nano Processor: Checking availability...");
 
     try {
-      // Check if window.ai exists (Chrome Nano API)
-      if (!("ai" in window)) {
-        console.log(
-          "Chrome Nano Processor: window.ai not available, trying navigator.ai"
-        );
+      // In service worker context, we can't access window.ai or navigator.ai
+      // These APIs are only available in the main thread/extension pages
+      console.log(
+        "Chrome Nano Processor: Service worker context - AI APIs not available"
+      );
+      console.log("Chrome Nano Processor: AI APIs require main thread context");
 
-        // Fallback to navigator.ai if available
-        if ("ai" in navigator) {
-          console.log(
-            "Chrome Nano Processor: Found navigator.ai, using as fallback"
-          );
-          this.isAvailable = true;
-          return true;
-        }
-
-        console.log("Chrome Nano Processor: No AI APIs available");
-        return false;
-      }
-
-      // Check if languageModel is available
-      if (!("languageModel" in window.ai)) {
-        console.log("Chrome Nano Processor: languageModel not available");
-        return false;
-      }
-
-      // Test creating a session
-      this.session = await window.ai.languageModel.create({
-        temperature: 0.7,
-        topK: 40,
-      });
-
-      console.log("Chrome Nano Processor: Available and initialized");
-      this.isAvailable = true;
-      return true;
+      this.isAvailable = false;
+      return false;
     } catch (error) {
       console.log("Chrome Nano Processor: Not available -", error.message);
       this.isAvailable = false;
