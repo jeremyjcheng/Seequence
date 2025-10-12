@@ -20,7 +20,20 @@ class ChromeNanoProcessor {
     try {
       // Check if window.ai exists (Chrome Nano API)
       if (!("ai" in window)) {
-        console.log("Chrome Nano Processor: window.ai not available");
+        console.log(
+          "Chrome Nano Processor: window.ai not available, trying navigator.ai"
+        );
+
+        // Fallback to navigator.ai if available
+        if ("ai" in navigator) {
+          console.log(
+            "Chrome Nano Processor: Found navigator.ai, using as fallback"
+          );
+          this.isAvailable = true;
+          return true;
+        }
+
+        console.log("Chrome Nano Processor: No AI APIs available");
         return false;
       }
 

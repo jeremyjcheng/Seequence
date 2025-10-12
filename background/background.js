@@ -3,11 +3,13 @@
 
 console.log("SEQUENCE DEBUG: Background service worker loaded");
 
-// Import Chrome Nano processor
+// Import AI processors
 importScripts("./chrome-nano-processor.js");
+importScripts("./fallback-ai-processor.js");
 
 // Global variables for AI processors
 let chromeNanoProcessor = null;
+let fallbackAIProcessor = null;
 
 // Built-in AI Processor using Mochi's approach (Gemini Nano via self.ai.prompt)
 console.log("SEQUENCE DEBUG: Defining BuiltInAIProcessor class");
@@ -1084,12 +1086,32 @@ async function initializeAI() {
       console.log("SEQUENCE DEBUG: ChromeNanoProcessor class not available");
     }
 
-    console.log(
-      "SEQUENCE DEBUG: Chrome built-in AI APIs not available - no fallbacks"
-    );
-    console.log(
-      "SEQUENCE DEBUG: Extension requires Chrome 127+ with AI flags enabled"
-    );
+    // Try fallback AI processor
+    if (FallbackAIProcessor) {
+      console.log("SEQUENCE DEBUG: Trying FallbackAIProcessor...");
+      try {
+        fallbackAIProcessor = new FallbackAIProcessor();
+        const fallbackAvailable = await fallbackAIProcessor.checkAvailability();
+        console.log(
+          "SEQUENCE DEBUG: Fallback AI Processor:",
+          fallbackAvailable
+        );
+
+        if (fallbackAvailable) {
+          console.log("SEQUENCE DEBUG: Using Fallback AI Processor");
+          return;
+        }
+      } catch (fallbackError) {
+        console.error(
+          "SEQUENCE DEBUG: Fallback AI processor failed:",
+          fallbackError
+        );
+        fallbackAIProcessor = null;
+      }
+    }
+
+    console.log("SEQUENCE DEBUG: No AI processors available");
+    console.log("SEQUENCE DEBUG: Extension will use heuristic fallback only");
   } catch (error) {
     console.error("SEQUENCE DEBUG: Error initializing AI processor:", error);
     console.error("SEQUENCE DEBUG: Error details:", error.stack);
@@ -1140,7 +1162,7 @@ async function handleTextProcessing(request, sendResponse) {
 
   try {
     // Initialize processors if needed
-    if (!chromeNanoProcessor) {
+    if (!chromeNanoProcessor && !fallbackAIProcessor) {
       console.log(
         "SEQUENCE DEBUG: No processors initialized, calling initializeAI()"
       );
@@ -1195,11 +1217,41 @@ async function handleTextProcessing(request, sendResponse) {
         );
       }
 
+      // Try fallback AI processor
+      if (fallbackAIProcessor && fallbackAIProcessor.isAvailable) {
+        console.log(
+          "SEQUENCE DEBUG: Using Fallback AI Processor for processing..."
+        );
+        try {
+          const diagramData = await fallbackAIProcessor.generateDiagramData(
+            text,
+            diagramType
+          );
+          console.log("SEQUENCE DEBUG: Fallback AI processing successful!");
+          console.log("SEQUENCE DEBUG: Generated diagram data:", diagramData);
+
+          sendResponse({
+            success: true,
+            data: diagramData,
+            source: "fallback-ai",
+          });
+          return;
+        } catch (fallbackError) {
+          console.error("SEQUENCE DEBUG: Fallback AI failed:", fallbackError);
+          sendResponse({
+            success: false,
+            error: "AI processing failed: " + fallbackError.message,
+            source: "fallback-ai-error",
+          });
+          return;
+        }
+      }
+
       sendResponse({
         success: false,
         error:
-          "Chrome Nano AI not available. Please ensure Chrome 127+ with AI flags enabled: chrome://flags/#prompt-api-for-gemini-nano",
-        source: "chrome-nano-unavailable",
+          "No AI processors available. Please ensure Chrome 127+ with AI flags enabled: chrome://flags/#prompt-api-for-gemini-nano",
+        source: "no-ai-available",
       });
       return;
     }

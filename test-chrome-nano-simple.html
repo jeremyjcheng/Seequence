@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Chrome Nano Simple Test</title>
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+        margin: 20px;
+      }
+      .test {
+        margin: 10px 0;
+        padding: 10px;
+        border: 1px solid #ccc;
+      }
+      .success {
+        background-color: #d4edda;
+      }
+      .error {
+        background-color: #f8d7da;
+      }
+      .info {
+        background-color: #d1ecf1;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>Chrome Nano AI Simple Test</h1>
+    <div id="results"></div>
+
+    <script>
+      async function testChromeNano() {
+        const results = document.getElementById("results");
+        let html = "";
+
+        // Test 1: Check if window.ai exists
+        html += '<div class="test info">';
+        html += "<h3>Test 1: window.ai availability</h3>";
+        if ("ai" in window) {
+          html += "<p>PASS: window.ai exists</p>";
+          html +=
+            "<p>Available properties: " +
+            Object.keys(window.ai).join(", ") +
+            "</p>";
+        } else {
+          html += "<p>FAIL: window.ai does not exist</p>";
+          html += "<p>Chrome Nano AI is not available</p>";
+          results.innerHTML = html;
+          return;
+        }
+        html += "</div>";
+
+        // Test 2: Check if languageModel exists
+        html += '<div class="test info">';
+        html += "<h3>Test 2: window.ai.languageModel availability</h3>";
+        if ("languageModel" in window.ai) {
+          html += "<p>PASS: window.ai.languageModel exists</p>";
+        } else {
+          html += "<p>FAIL: window.ai.languageModel does not exist</p>";
+          html += "<p>Chrome Nano AI language model is not available</p>";
+          results.innerHTML = html;
+          return;
+        }
+        html += "</div>";
+
+        // Test 3: Try to create a session
+        html += '<div class="test info">';
+        html += "<h3>Test 3: Session creation</h3>";
+        try {
+          const session = await window.ai.languageModel.create({
+            temperature: 0.7,
+            topK: 40,
+          });
+          html += "<p>PASS: Session created successfully</p>";
+
+          // Test 4: Try a simple prompt
+          html += '<div class="test info">';
+          html += "<h3>Test 4: Simple prompt</h3>";
+          try {
+            const result = await session.prompt("Hello, this is a test.");
+            html += "<p>PASS: Prompt successful</p>";
+            html += "<p>Result: " + result + "</p>";
+            html +=
+              '<div class="test success"><h3>SUCCESS: Chrome Nano AI is working!</h3></div>';
+          } catch (promptError) {
+            html += "<p>FAIL: Prompt failed - " + promptError.message + "</p>";
+            html +=
+              '<div class="test error"><h3>ERROR: Chrome Nano AI prompt failed</h3></div>';
+          }
+          html += "</div>";
+        } catch (sessionError) {
+          html +=
+            "<p>FAIL: Session creation failed - " +
+            sessionError.message +
+            "</p>";
+          html +=
+            '<div class="test error"><h3>ERROR: Chrome Nano AI session creation failed</h3></div>';
+        }
+        html += "</div>";
+
+        results.innerHTML = html;
+      }
+
+      // Run test on page load
+      window.addEventListener("load", testChromeNano);
+    </script>
+  </body>
+</html>
