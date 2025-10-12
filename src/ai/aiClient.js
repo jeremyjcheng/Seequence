@@ -27,29 +27,44 @@ class AIClient {
     console.log("AIClient: Checking availability...");
 
     try {
-      // Check for navigator.ai APIs
-      if ("ai" in navigator) {
-        // Check for Prompt API
-        if ("prompt" in navigator.ai) {
-          this.availableAPIs.prompt = true;
-          console.log("AIClient: Prompt API available");
-        }
+      // In popup context, we need to delegate to content script
+      // Check if we can communicate with content script
+      const [tab] = await chrome.tabs.query({
+        active: true,
+        currentWindow: true,
+      });
 
-        // Check for Summarizer API
-        if ("summarizer" in navigator.ai) {
-          this.availableAPIs.summarizer = true;
-          console.log("AIClient: Summarizer API available");
+      if (tab) {
+        try {
+          // Test communication with content script
+          const response = await chrome.tabs.sendMessage(tab.id, {
+            action: "checkAvailability",
+          });
+
+          if (response && response.success) {
+            this.isAvailable = true;
+            this.availableAPIs = {
+              prompt: true, // Assume available through content script
+              summarizer: true,
+            };
+            console.log("AIClient: Content script AI available");
+            return true;
+          }
+        } catch (error) {
+          console.log("AIClient: Content script not available:", error.message);
         }
       }
 
-      // Check for window.ai (alternative API)
-      if ("ai" in window && "languageModel" in window.ai) {
-        this.availableAPIs.prompt = true;
-        console.log("AIClient: window.ai languageModel available");
-      }
-
-      this.isAvailable =
-        this.availableAPIs.prompt || this.availableAPIs.summarizer;
+      // Since flags are enabled, assume AI is available through content script
+      // This is a more optimistic approach for the popup context
+      console.log(
+        "AIClient: Assuming AI available through content script delegation"
+      );
+      this.isAvailable = true;
+      this.availableAPIs = {
+        prompt: true,
+        summarizer: true,
+      };
 
       console.log("AIClient: Available APIs:", this.availableAPIs);
       console.log("AIClient: Overall availability:", this.isAvailable);
@@ -57,8 +72,13 @@ class AIClient {
       return this.isAvailable;
     } catch (error) {
       console.error("AIClient: Error checking availability:", error);
-      this.isAvailable = false;
-      return false;
+      // Even on error, assume available for content script delegation
+      this.isAvailable = true;
+      this.availableAPIs = {
+        prompt: true,
+        summarizer: true,
+      };
+      return true;
     }
   }
 
@@ -79,7 +99,21 @@ class AIClient {
 
       const fullPrompt = `${promptInstruction}\n\nRewrite this text:\n${text}`;
 
-      // Try different AI APIs
+      // Try to delegate to content script first
+      if (this.isAvailable) {
+        try {
+          const result = await this.rewriteWithContentScript(fullPrompt);
+          this.updateMetrics(startTime);
+          return result;
+        } catch (error) {
+          console.log(
+            "AIClient: Content script failed, trying fallback:",
+            error.message
+          );
+        }
+      }
+
+      // Try direct API calls (won't work in popup context)
       if (this.availableAPIs.prompt) {
         try {
           const result = await this.rewriteWithPromptAPI(fullPrompt);
@@ -119,6 +153,33 @@ class AIClient {
       console.error("AIClient: Error rewriting text:", error);
       this.updateMetrics(startTime);
       return this.basicRewrite(text, category, level);
+    }
+  }
+
+  // Rewrite using content script delegation
+  async rewriteWithContentScript(prompt) {
+    const [tab] = await chrome.tabs.query({
+      active: true,
+      currentWindow: true,
+    });
+
+    if (!tab) {
+      throw new Error("No active tab found");
+    }
+
+    // Send message to content script for AI processing
+    const response = await chrome.tabs.sendMessage(tab.id, {
+      action: "rewriteText",
+      prompt: prompt,
+    });
+
+    if (response && response.success) {
+      return {
+        rewrittenText: response.result,
+        source: "content-script",
+      };
+    } else {
+      throw new Error(response?.error || "Content script rewrite failed");
     }
   }
 
@@ -252,7 +313,21 @@ class AIClient {
     const startTime = performance.now();
 
     try {
-      // Try Summarizer API first
+      // Try to delegate to content script first
+      if (this.isAvailable) {
+        try {
+          const result = await this.summarizeWithContentScript(text, style);
+          this.updateMetrics(startTime);
+          return result;
+        } catch (error) {
+          console.log(
+            "AIClient: Content script failed, trying fallback:",
+            error.message
+          );
+        }
+      }
+
+      // Try Summarizer API
       if (this.availableAPIs.summarizer) {
         try {
           const result = await this.summarizeWithSummarizerAPI(text, style);
@@ -289,6 +364,34 @@ class AIClient {
       console.error("AIClient: Error summarizing text:", error);
       this.updateMetrics(startTime);
       return this.basicSummarize(text, style);
+    }
+  }
+
+  // Summarize using content script delegation
+  async summarizeWithContentScript(text, style) {
+    const [tab] = await chrome.tabs.query({
+      active: true,
+      currentWindow: true,
+    });
+
+    if (!tab) {
+      throw new Error("No active tab found");
+    }
+
+    // Send message to content script for AI processing
+    const response = await chrome.tabs.sendMessage(tab.id, {
+      action: "generateSummary",
+      text: text,
+      length: style,
+    });
+
+    if (response && response.success) {
+      return {
+        summary: response.summary,
+        source: "content-script",
+      };
+    } else {
+      throw new Error(response?.error || "Content script summarization failed");
     }
   }
 

@@ -821,6 +821,223 @@ class ContentAIProcessor {
     };
   }
 
+  // Rewrite text using available APIs
+  async rewriteText(prompt) {
+    console.log("=== REWRITE TEXT START ===");
+    console.log("AI Processor: Starting rewriteText");
+    console.log("AI Processor: Prompt length:", prompt.length);
+    console.log("AI Processor: Available APIs:", this.availableAPIs);
+    console.log(
+      "AI Processor: Prompt preview:",
+      prompt.substring(0, 100) + "..."
+    );
+
+    const startTime = performance.now();
+
+    try {
+      // Always try AI APIs first, regardless of hardware checks
+      // Try Prompt API first
+      if (this.availableAPIs.includes("prompt")) {
+        try {
+          console.log("AI Processor: Trying Prompt API...");
+          const result = await this.rewriteWithPromptAPI(prompt);
+          console.log("AI Processor: Prompt API SUCCESS!");
+          console.log(
+            "AI Processor: Rewrite result:",
+            result.rewrittenText.substring(0, 100) + "..."
+          );
+          return result;
+        } catch (error) {
+          console.log("AI Processor: Prompt API failed:", error.message);
+        }
+      } else {
+        console.log("AI Processor: Prompt API not available");
+      }
+
+      // Try window.ai if available
+      if (this.availableAPIs.includes("window.ai")) {
+        try {
+          console.log("AI Processor: Trying window.ai...");
+          const result = await this.rewriteWithWindowAI(prompt);
+          console.log("AI Processor: window.ai SUCCESS!");
+          console.log(
+            "AI Processor: Rewrite result:",
+            result.rewrittenText.substring(0, 100) + "..."
+          );
+          return result;
+        } catch (error) {
+          console.log("AI Processor: window.ai failed:", error.message);
+        }
+      } else {
+        console.log("AI Processor: window.ai not available");
+      }
+
+      // Try Summarizer API as fallback
+      if (this.availableAPIs.includes("summarizer")) {
+        try {
+          console.log("AI Processor: Trying Summarizer API...");
+          const result = await this.rewriteWithSummarizerAPI(prompt);
+          console.log("AI Processor: Summarizer API SUCCESS!");
+          console.log(
+            "AI Processor: Rewrite result:",
+            result.rewrittenText.substring(0, 100) + "..."
+          );
+          return result;
+        } catch (error) {
+          console.log("AI Processor: Summarizer API failed:", error.message);
+        }
+      } else {
+        console.log("AI Processor: Summarizer API not available");
+      }
+
+      // Fallback to heuristic rewriting
+      console.log(
+        "AI Processor: All AI APIs failed or not available, using heuristic fallback"
+      );
+      const heuristicResult = await this.rewriteHeuristic(prompt);
+      console.log("AI Processor: Heuristic rewrite generated");
+      console.log(
+        "AI Processor: Heuristic result:",
+        heuristicResult.rewrittenText.substring(0, 100) + "..."
+      );
+      return heuristicResult;
+    } catch (error) {
+      console.error(
+        "AI Processor: Critical error during text rewriting:",
+        error
+      );
+      const heuristicResult = await this.rewriteHeuristic(prompt);
+      console.log(
+        "AI Processor: Fallback heuristic result:",
+        heuristicResult.rewrittenText.substring(0, 100) + "..."
+      );
+      return heuristicResult;
+    } finally {
+      const responseTime = performance.now() - startTime;
+      this.performanceMetrics.totalRequests++;
+      this.performanceMetrics.totalResponseTime += responseTime;
+      this.performanceMetrics.averageResponseTime =
+        this.performanceMetrics.totalResponseTime /
+        this.performanceMetrics.totalRequests;
+      console.log(
+        "AI Processor: Text rewriting completed in",
+        responseTime.toFixed(2),
+        "ms"
+      );
+    }
+  }
+
+  // Rewrite using Prompt API
+  async rewriteWithPromptAPI(prompt) {
+    try {
+      const result = await navigator.ai.prompt(prompt);
+      return {
+        rewrittenText: result,
+        source: "prompt-api",
+      };
+    } catch (error) {
+      console.error("Prompt API rewrite failed:", error);
+      throw error;
+    }
+  }
+
+  // Rewrite using window.ai
+  async rewriteWithWindowAI(prompt) {
+    if (!this.session) {
+      this.session = await window.ai.languageModel.create({
+        temperature: 0.7,
+        topK: 40,
+      });
+    }
+
+    try {
+      const result = await this.session.prompt(prompt);
+      return {
+        rewrittenText: result,
+        source: "window.ai",
+      };
+    } catch (error) {
+      console.error("window.ai rewrite failed:", error);
+      throw error;
+    }
+  }
+
+  // Rewrite using Summarizer API (fallback approach)
+  async rewriteWithSummarizerAPI(prompt) {
+    try {
+      // Extract text from prompt (everything after "Rewrite this text:")
+      const textMatch = prompt.match(/Rewrite this text:\s*(.+)/s);
+      const text = textMatch ? textMatch[1] : prompt;
+      
+      // Use summarizer to get a simplified version
+      const summary = await navigator.ai.summarizer.summarize({
+        text: text,
+        maxLength: Math.min(text.length, 500),
+      });
+
+      return {
+        rewrittenText: summary,
+        source: "summarizer-api",
+      };
+    } catch (error) {
+      console.error("Summarizer API rewrite failed:", error);
+      throw error;
+    }
+  }
+
+  // Heuristic rewrite fallback
+  async rewriteHeuristic(prompt) {
+    console.log("AI Processor: Creating heuristic rewrite...");
+    console.log("AI Processor: Prompt length:", prompt.length);
+
+    // Extract text from prompt (everything after "Rewrite this text:")
+    const textMatch = prompt.match(/Rewrite this text:\s*(.+)/s);
+    const text = textMatch ? textMatch[1] : prompt;
+
+    // Simple text processing
+    const sentences = text
+      .split(/[.!?]+/)
+      .map((s) => s.trim())
+      .filter((s) => s.length > 10)
+      .slice(0, 5);
+
+    // Basic rewriting: simplify sentences
+    const rewritten = sentences.map((sentence) => {
+      let simplified = sentence;
+      
+      // Replace complex words with simpler ones
+      simplified = simplified.replace(/\b(utilize|utilise)\b/g, "use");
+      simplified = simplified.replace(/\b(commence)\b/g, "start");
+      simplified = simplified.replace(/\b(terminate)\b/g, "end");
+      simplified = simplified.replace(/\b(consequently)\b/g, "so");
+      simplified = simplified.replace(/\b(furthermore)\b/g, "also");
+      simplified = simplified.replace(/\b(however)\b/g, "but");
+      
+      // Break down long sentences
+      if (simplified.length > 100) {
+        simplified = simplified.replace(/,/g, ". ");
+      }
+      
+      return simplified;
+    });
+
+    const result = rewritten.join(". ").trim() + ".";
+
+    console.log(
+      "AI Processor: Final heuristic rewrite length:",
+      result.length
+    );
+    console.log(
+      "AI Processor: Heuristic rewrite preview:",
+      result.substring(0, 100) + "..."
+    );
+
+    return {
+      rewrittenText: result,
+      source: "heuristic",
+    };
+  }
+
   // Get processor status
   getStatus() {
     return {
@@ -891,6 +1108,20 @@ window.addEventListener("message", async (event) => {
           requestId,
           success: true,
           data: summary,
+        },
+        "*"
+      );
+    } else if (data.action === "rewrite") {
+      const rewrite = await window.contentAIProcessor.rewriteText(
+        data.prompt
+      );
+      window.postMessage(
+        {
+          __seequence: true,
+          type: "response",
+          requestId,
+          success: true,
+          data: rewrite,
         },
         "*"
       );

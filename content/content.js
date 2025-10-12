@@ -120,6 +120,26 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
         sendResponse({ success: false, error: error.message });
       });
     return true; // Keep message channel open for async response
+  } else if (request.action === "rewriteText") {
+    console.log(
+      "Content: rewriteText requested, prompt length:",
+      request.prompt?.length || 0
+    );
+    // Rewrite text using AI in content script context
+    rewriteTextWithAI(request.prompt)
+      .then((result) => {
+        console.log("Content: rewriteText completed successfully");
+        sendResponse({
+          success: true,
+          result: result.rewrittenText,
+          source: result.source,
+        });
+      })
+      .catch((error) => {
+        console.error("Content: rewriteText failed:", error);
+        sendResponse({ success: false, error: error.message });
+      });
+    return true; // Keep message channel open for async response
   } else {
     console.log("Content: Unknown action requested:", request.action);
     sendResponse({ success: false, error: "Unknown action" });
@@ -156,6 +176,21 @@ async function generateSummaryWithAI(text, length) {
   });
   console.log("Content script: Generated summary:", summaryResult);
   return summaryResult;
+}
+
+// Rewrite text using AI
+async function rewriteTextWithAI(prompt) {
+  console.log("Content script: Rewriting text with AI");
+  // Ensure main-world AI is initialized
+  console.log("Content script: Requesting AI availability in main world...");
+  await sendToMainWorld("checkAvailability");
+
+  // Rewrite text via main world
+  const rewriteResult = await sendToMainWorld("rewrite", {
+    prompt,
+  });
+  console.log("Content script: Generated rewrite:", rewriteResult);
+  return rewriteResult;
 }
 
 // Handle text selection
