@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Seequence Debug Test</title>
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+        max-width: 800px;
+        margin: 0 auto;
+        padding: 20px;
+        line-height: 1.6;
+      }
+      .test-section {
+        margin: 20px 0;
+        padding: 15px;
+        border: 1px solid #ddd;
+        border-radius: 5px;
+      }
+      .instructions {
+        background-color: #f0f8ff;
+        padding: 15px;
+        border-radius: 5px;
+        margin-bottom: 20px;
+      }
+      .debug-info {
+        background-color: #f5f5f5;
+        padding: 10px;
+        border-radius: 5px;
+        margin: 10px 0;
+        font-family: monospace;
+        font-size: 12px;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>Seequence Debug Test Page</h1>
+
+    <div class="instructions">
+      <h3>Debug Instructions:</h3>
+      <ol>
+        <li>Open Developer Tools (F12) and go to Console tab</li>
+        <li>Select any text below (highlight it with your mouse)</li>
+        <li>Click the Seequence extension icon</li>
+        <li>Click "Create Diagram"</li>
+        <li>Watch the console logs to see exactly what's happening</li>
+      </ol>
+    </div>
+
+    <div class="debug-info">
+      <strong>What to look for in console:</strong><br />
+      • "=== SUMMARY GENERATION START ===" - Shows summary process<br />
+      • "=== DIAGRAM GENERATION START ===" - Shows diagram process<br />
+      • "AI Processor: Available APIs: [...]" - Shows which AI APIs are
+      detected<br />
+      • "AI Processor: Heuristic summary generated" - Shows fallback summary<br />
+      • "AI Processor: Heuristic analysis completed" - Shows fallback analysis
+    </div>
+
+    <div class="test-section">
+      <h2>Test 1: Sequential Process (Should create timeline)</h2>
+      <p>
+        The water cycle is a continuous process that involves several key steps.
+        First, water from oceans and lakes evaporates due to heat from the sun.
+        Next, the water vapor rises into the atmosphere where it cools and
+        condenses into clouds. Then, when the clouds become heavy enough,
+        precipitation occurs in the form of rain, snow, or hail. Finally, the
+        water returns to the Earth's surface and the cycle begins again.
+      </p>
+    </div>
+
+    <div class="test-section">
+      <h2>Test 2: Cause and Effect (Should create causal diagram)</h2>
+      <p>
+        Climate change is caused by increased greenhouse gas emissions from
+        human activities. These emissions trap heat in the Earth's atmosphere,
+        leading to global temperature rise. As temperatures increase, polar ice
+        caps melt, causing sea levels to rise. Rising sea levels result in
+        coastal flooding and displacement of communities. Additionally, climate
+        change affects weather patterns, leading to more frequent and severe
+        storms.
+      </p>
+    </div>
+
+    <div class="test-section">
+      <h2>Test 3: Comparison (Should create comparative diagram)</h2>
+      <p>
+        Renewable energy sources like solar and wind power offer several
+        advantages over fossil fuels. Solar energy is clean and abundant, but
+        requires large land areas and depends on weather conditions. Wind energy
+        is cost-effective and produces no emissions, yet can be noisy and
+        requires specific locations. Fossil fuels are reliable and energy-dense,
+        but produce harmful emissions and are finite resources. Nuclear power
+        provides consistent energy output but poses safety and waste disposal
+        challenges.
+      </p>
+    </div>
+
+    <div class="test-section">
+      <h2>Test 4: Simple Biography (Should create narrative diagram)</h2>
+      <p>
+        Eric Patrick Clapton was born on 30 March 1945 in Surrey, England. He is
+        regarded as one of the most successful and influential guitarists in
+        rock music. Clapton has been inducted into the Rock and Roll Hall of
+        Fame three times. His most famous songs include "Layla", "Tears in
+        Heaven", and "Wonderful Tonight". He has won 18 Grammy Awards throughout
+        his career.
+      </p>
+    </div>
+
+    <script>
+      console.log("=== DEBUG TEST PAGE LOADED ===");
+      console.log(
+        "Test page ready. Select text and use the Seequence extension to test."
+      );
+
+      // Add visual feedback for text selection
+      document.addEventListener("mouseup", function () {
+        const selection = window.getSelection();
+        if (selection.toString().trim()) {
+          console.log(
+            "Text selected for testing:",
+            selection.toString().substring(0, 100) + "..."
+          );
+        }
+      });
+    </script>
+  </body>
+</html>

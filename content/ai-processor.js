@@ -21,39 +21,59 @@ class ContentAIProcessor {
 
   // Check what AI APIs are available in content script context
   async checkAvailability() {
+    console.log("=== AI API AVAILABILITY CHECK ===");
     console.log("Content AI Processor: Checking availability...");
 
     try {
       const availableAPIs = [];
+      const diagnosticInfo = {
+        chromeVersion: this.getChromeVersion(),
+        isSecureContext: window.isSecureContext,
+        userAgent: navigator.userAgent,
+        deviceMemory: navigator.deviceMemory || "unknown",
+        platform: navigator.platform,
+      };
+
+      console.log("Diagnostic Info:", diagnosticInfo);
 
       // Check for Prompt API
       if ("ai" in navigator && "prompt" in navigator.ai) {
         availableAPIs.push("prompt");
-        console.log("Found Prompt API");
+        console.log("✓ Found Prompt API");
+      } else {
+        console.log("✗ Prompt API not available");
       }
 
       // Check for Summarizer API
       if ("ai" in navigator && "summarizer" in navigator.ai) {
         availableAPIs.push("summarizer");
-        console.log("Found Summarizer API");
+        console.log("✓ Found Summarizer API");
+      } else {
+        console.log("✗ Summarizer API not available");
       }
 
       // Check for Translator API
       if ("ai" in navigator && "translator" in navigator.ai) {
         availableAPIs.push("translator");
-        console.log("Found Translator API");
+        console.log("✓ Found Translator API");
+      } else {
+        console.log("✗ Translator API not available");
       }
 
       // Check for Writer API
       if ("ai" in navigator && "writer" in navigator.ai) {
         availableAPIs.push("writer");
-        console.log("Found Writer API");
+        console.log("✓ Found Writer API");
+      } else {
+        console.log("✗ Writer API not available");
       }
 
       // Check for window.ai (Chrome Nano)
       if ("ai" in window && "languageModel" in window.ai) {
         availableAPIs.push("window.ai");
-        console.log("Found window.ai languageModel");
+        console.log("✓ Found window.ai languageModel");
+      } else {
+        console.log("✗ window.ai languageModel not available");
       }
 
       this.availableAPIs = availableAPIs;
@@ -64,6 +84,18 @@ class ContentAIProcessor {
       console.log("Available APIs:", availableAPIs);
       console.log("Content AI Processor: Available (hardware checks bypassed)");
 
+      // Test actual API calls if any are available
+      if (availableAPIs.length > 0) {
+        await this.testAPICalls(availableAPIs);
+      } else {
+        console.log("⚠️ No AI APIs available - will use heuristic fallback");
+        console.log("💡 To enable AI APIs:");
+        console.log("   1. Go to chrome://flags/");
+        console.log("   2. Enable: #prompt-api-for-gemini-nano");
+        console.log("   3. Enable: #optimization-guide-on-device-model");
+        console.log("   4. Restart Chrome");
+      }
+
       return this.isAvailable;
     } catch (error) {
       console.log(
@@ -73,6 +105,44 @@ class ContentAIProcessor {
       // Even on error, mark as available to bypass hardware checks
       this.isAvailable = true;
       return true;
+    }
+  }
+
+  // Get Chrome version from user agent
+  getChromeVersion() {
+    const userAgent = navigator.userAgent;
+    const chromeMatch = userAgent.match(/Chrome\/(\d+)/);
+    return chromeMatch ? parseInt(chromeMatch[1]) : 0;
+  }
+
+  // Test actual API calls to see if they work
+  async testAPICalls(availableAPIs) {
+    console.log("Testing actual API calls...");
+
+    for (const api of availableAPIs) {
+      try {
+        if (api === "window.ai") {
+          console.log("Testing window.ai.languageModel.create...");
+          const session = await window.ai.languageModel.create({
+            temperature: 0.7,
+            topK: 40,
+          });
+          console.log("✓ window.ai test successful");
+        } else if (api === "prompt") {
+          console.log("Testing navigator.ai.prompt...");
+          const result = await navigator.ai.prompt("Test prompt");
+          console.log("✓ navigator.ai.prompt test successful");
+        } else if (api === "summarizer") {
+          console.log("Testing navigator.ai.summarizer...");
+          const result = await navigator.ai.summarizer.summarize({
+            text: "Test text for summarization",
+            maxLength: 50,
+          });
+          console.log("✓ navigator.ai.summarizer test successful");
+        }
+      } catch (error) {
+        console.log(`✗ ${api} test failed:`, error.message);
+      }
     }
   }
 
@@ -237,43 +307,130 @@ class ContentAIProcessor {
 
   // Heuristic analysis fallback
   async analyzeHeuristic(text) {
-    const words = text.toLowerCase().split(/\s+/);
-    const sentences = text.split(/[.!?]+/).filter((s) => s.trim().length > 0);
+    console.log("AI Processor: Creating heuristic analysis...");
+    console.log("AI Processor: Input text length:", text.length);
 
-    // Simple content type detection
+    const words = text.toLowerCase().split(/\s+/);
+    const sentences = text
+      .split(/[.!?]+/)
+      .map((s) => s.trim())
+      .filter((s) => s.length > 10) // Only meaningful sentences
+      .slice(0, 8); // Limit to first 8 sentences
+
+    console.log(
+      "AI Processor: Found",
+      sentences.length,
+      "sentences for analysis"
+    );
+
+    // Enhanced content type detection
     let type = "narrative";
-    if (words.some((w) => ["first", "second", "then", "next"].includes(w))) {
+    const sequentialWords = [
+      "first",
+      "second",
+      "third",
+      "then",
+      "next",
+      "finally",
+      "initially",
+      "subsequently",
+    ];
+    const causalWords = [
+      "because",
+      "therefore",
+      "causes",
+      "leads to",
+      "results in",
+      "due to",
+      "as a result",
+    ];
+    const comparativeWords = [
+      "versus",
+      "compared",
+      "different",
+      "similar",
+      "unlike",
+      "whereas",
+      "however",
+    ];
+    const hierarchicalWords = [
+      "includes",
+      "contains",
+      "consists",
+      "comprises",
+      "divided into",
+      "categorized",
+    ];
+
+    if (words.some((w) => sequentialWords.includes(w))) {
       type = "sequential";
-    } else if (
-      words.some((w) => ["because", "therefore", "causes"].includes(w))
-    ) {
+      console.log("AI Processor: Detected sequential content");
+    } else if (words.some((w) => causalWords.includes(w))) {
       type = "causal";
-    } else if (
-      words.some((w) => ["versus", "compared", "different"].includes(w))
-    ) {
+      console.log("AI Processor: Detected causal content");
+    } else if (words.some((w) => comparativeWords.includes(w))) {
       type = "comparative";
+      console.log("AI Processor: Detected comparative content");
+    } else if (words.some((w) => hierarchicalWords.includes(w))) {
+      type = "hierarchical";
+      console.log("AI Processor: Detected hierarchical content");
+    } else {
+      console.log("AI Processor: Defaulting to narrative content");
     }
 
+    // Create meaningful key points (limit to 5 for better diagrams)
     const keyPoints = sentences.slice(0, 5).map((s, index) => ({
-      text: s.trim(),
+      text: s.length > 80 ? s.substring(0, 80) + "..." : s, // Truncate long sentences
       order: index + 1,
       type: "point",
     }));
 
+    // Create relationships based on content type
     const relationships = [];
-    for (let i = 0; i < keyPoints.length - 1; i++) {
-      relationships.push({
-        from: i,
-        to: i + 1,
-        type: "related",
-        label: "→",
-      });
+    if (type === "sequential") {
+      for (let i = 0; i < keyPoints.length - 1; i++) {
+        relationships.push({
+          from: i,
+          to: i + 1,
+          type: "sequence",
+          label: "→",
+        });
+      }
+    } else if (type === "causal") {
+      for (let i = 0; i < keyPoints.length - 1; i++) {
+        relationships.push({
+          from: i,
+          to: i + 1,
+          type: "causes",
+          label: "→",
+        });
+      }
+    } else {
+      // Default to simple connections
+      for (let i = 0; i < keyPoints.length - 1; i++) {
+        relationships.push({
+          from: i,
+          to: i + 1,
+          type: "related",
+          label: "→",
+        });
+      }
     }
+
+    const mainTopic = sentences[0]?.substring(0, 60) + "..." || "Main Topic";
+
+    console.log("AI Processor: Heuristic analysis completed");
+    console.log("AI Processor: Analysis result:", {
+      type,
+      keyPointsCount: keyPoints.length,
+      relationshipsCount: relationships.length,
+      mainTopic: mainTopic.substring(0, 50) + "...",
+    });
 
     return {
       type,
-      confidence: 0.5,
-      mainTopic: sentences[0]?.substring(0, 50) + "..." || "Main Topic",
+      confidence: 0.6, // Slightly higher confidence for improved heuristic
+      mainTopic,
       keyPoints,
       relationships,
       structure: type,
@@ -283,11 +440,42 @@ class ContentAIProcessor {
 
   // Generate diagram data
   async generateDiagramData(text, diagramType = "auto") {
+    console.log("=== DIAGRAM GENERATION START ===");
+    console.log("AI Processor: Starting generateDiagramData");
+    console.log("AI Processor: Input text length:", text.length);
+    console.log("AI Processor: Diagram type:", diagramType);
+    console.log(
+      "AI Processor: Input text preview:",
+      text.substring(0, 100) + "..."
+    );
+
     try {
       const analysis = await this.analyzeTextStructure(text);
-      return await this.generateDiagramFromAnalysis(analysis, diagramType);
+      console.log("AI Processor: Text analysis completed");
+      console.log("AI Processor: Analysis result:", {
+        type: analysis.type,
+        mainTopic: analysis.mainTopic,
+        keyPointsCount: analysis.keyPoints?.length || 0,
+        source: analysis.source,
+      });
+
+      const diagramData = await this.generateDiagramFromAnalysis(
+        analysis,
+        diagramType
+      );
+      console.log("AI Processor: Diagram data generated");
+      console.log("AI Processor: Diagram data:", {
+        title: diagramData.title,
+        layout: diagramData.layout,
+        nodesCount: diagramData.nodes?.length || 0,
+        edgesCount: diagramData.edges?.length || 0,
+        type: diagramData.type,
+        source: diagramData.source,
+      });
+
+      return diagramData;
     } catch (error) {
-      console.error("Diagram generation failed:", error);
+      console.error("AI Processor: Diagram generation failed:", error);
       throw error;
     }
   }
@@ -323,6 +511,16 @@ class ContentAIProcessor {
 
   // Generate summary using available APIs
   async generateSummary(text, length = "short") {
+    console.log("=== SUMMARY GENERATION START ===");
+    console.log("AI Processor: Starting generateSummary");
+    console.log("AI Processor: Input text length:", text.length);
+    console.log("AI Processor: Requested length:", length);
+    console.log("AI Processor: Available APIs:", this.availableAPIs);
+    console.log(
+      "AI Processor: Input text preview:",
+      text.substring(0, 100) + "..."
+    );
+
     const startTime = performance.now();
 
     try {
@@ -330,42 +528,79 @@ class ContentAIProcessor {
       // Try Summarizer API first
       if (this.availableAPIs.includes("summarizer")) {
         try {
-          return await this.summarizeWithSummarizerAPI(text, length);
-        } catch (error) {
+          console.log("AI Processor: Trying Summarizer API...");
+          const result = await this.summarizeWithSummarizerAPI(text, length);
+          console.log("AI Processor: Summarizer API SUCCESS!");
           console.log(
-            "Summarizer API failed, trying next option:",
-            error.message
+            "AI Processor: Summary result:",
+            result.summary.substring(0, 100) + "..."
           );
+          return result;
+        } catch (error) {
+          console.log("AI Processor: Summarizer API failed:", error.message);
         }
+      } else {
+        console.log("AI Processor: Summarizer API not available");
       }
 
       // Try Prompt API
       if (this.availableAPIs.includes("prompt")) {
         try {
-          return await this.summarizeWithPromptAPI(text, length);
+          console.log("AI Processor: Trying Prompt API...");
+          const result = await this.summarizeWithPromptAPI(text, length);
+          console.log("AI Processor: Prompt API SUCCESS!");
+          console.log(
+            "AI Processor: Summary result:",
+            result.summary.substring(0, 100) + "..."
+          );
+          return result;
         } catch (error) {
-          console.log("Prompt API failed, trying next option:", error.message);
+          console.log("AI Processor: Prompt API failed:", error.message);
         }
+      } else {
+        console.log("AI Processor: Prompt API not available");
       }
 
       // Try window.ai if available
       if (this.availableAPIs.includes("window.ai")) {
         try {
-          return await this.summarizeWithWindowAI(text, length);
+          console.log("AI Processor: Trying window.ai...");
+          const result = await this.summarizeWithWindowAI(text, length);
+          console.log("AI Processor: window.ai SUCCESS!");
+          console.log(
+            "AI Processor: Summary result:",
+            result.summary.substring(0, 100) + "..."
+          );
+          return result;
         } catch (error) {
-          console.log("window.ai failed, trying next option:", error.message);
+          console.log("AI Processor: window.ai failed:", error.message);
         }
+      } else {
+        console.log("AI Processor: window.ai not available");
       }
 
       // Fallback to heuristic
-      console.log("All AI APIs failed, using heuristic fallback for summary");
-      return await this.summarizeHeuristic(text, length);
+      console.log(
+        "AI Processor: All AI APIs failed or not available, using heuristic fallback"
+      );
+      const heuristicResult = await this.summarizeHeuristic(text, length);
+      console.log("AI Processor: Heuristic summary generated");
+      console.log(
+        "AI Processor: Heuristic result:",
+        heuristicResult.summary.substring(0, 100) + "..."
+      );
+      return heuristicResult;
     } catch (error) {
       console.error(
-        "All summary methods failed, using heuristic fallback:",
+        "AI Processor: Critical error during summary generation:",
         error
       );
-      return await this.summarizeHeuristic(text, length);
+      const heuristicResult = await this.summarizeHeuristic(text, length);
+      console.log(
+        "AI Processor: Fallback heuristic result:",
+        heuristicResult.summary.substring(0, 100) + "..."
+      );
+      return heuristicResult;
     } finally {
       const responseTime = performance.now() - startTime;
       this.performanceMetrics.totalRequests++;
@@ -373,6 +608,11 @@ class ContentAIProcessor {
       this.performanceMetrics.averageResponseTime =
         this.performanceMetrics.totalResponseTime /
         this.performanceMetrics.totalRequests;
+      console.log(
+        "AI Processor: Summary generation completed in",
+        responseTime.toFixed(2),
+        "ms"
+      );
     }
   }
 
@@ -452,16 +692,46 @@ class ContentAIProcessor {
 
   // Heuristic summary fallback
   async summarizeHeuristic(text, length) {
-    const sentences = text.split(/[.!?]+/).filter((s) => s.trim().length > 0);
+    console.log("AI Processor: Creating heuristic summary...");
+    console.log("AI Processor: Input text length:", text.length);
+
+    // Split into sentences and clean them up
+    const sentences = text
+      .split(/[.!?]+/)
+      .map((s) => s.trim())
+      .filter((s) => s.length > 10) // Only sentences with more than 10 characters
+      .slice(0, 10); // Limit to first 10 sentences to avoid too much text
+
+    console.log("AI Processor: Found", sentences.length, "sentences");
 
     let summary;
     if (length === "short") {
-      summary = sentences[0] || text.substring(0, 100) + "...";
+      // For short summary, take the first meaningful sentence
+      summary = sentences[0] || text.substring(0, 80) + "...";
+      console.log("AI Processor: Short summary created");
     } else if (length === "medium") {
+      // For medium summary, take first 2 sentences
       summary = sentences.slice(0, 2).join(". ") + ".";
+      console.log("AI Processor: Medium summary created");
     } else {
+      // For long summary, take first 3 sentences
       summary = sentences.slice(0, 3).join(". ") + ".";
+      console.log("AI Processor: Long summary created");
     }
+
+    // Ensure summary is not too long
+    if (summary.length > 300) {
+      summary = summary.substring(0, 300) + "...";
+    }
+
+    console.log(
+      "AI Processor: Final heuristic summary length:",
+      summary.length
+    );
+    console.log(
+      "AI Processor: Heuristic summary preview:",
+      summary.substring(0, 100) + "..."
+    );
 
     return {
       summary: summary.trim(),

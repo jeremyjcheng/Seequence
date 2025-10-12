@@ -1,0 +1,293 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Chrome AI APIs Check</title>
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+        max-width: 800px;
+        margin: 0 auto;
+        padding: 20px;
+        line-height: 1.6;
+      }
+      .check-item {
+        margin: 10px 0;
+        padding: 10px;
+        border: 1px solid #ddd;
+        border-radius: 5px;
+      }
+      .success {
+        background-color: #d4edda;
+        border-color: #c3e6cb;
+      }
+      .failure {
+        background-color: #f8d7da;
+        border-color: #f5c6cb;
+      }
+      .warning {
+        background-color: #fff3cd;
+        border-color: #ffeaa7;
+      }
+      .info {
+        background-color: #d1ecf1;
+        border-color: #bee5eb;
+      }
+      .code {
+        background-color: #f8f9fa;
+        padding: 5px;
+        border-radius: 3px;
+        font-family: monospace;
+        font-size: 12px;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>Chrome AI APIs Availability Check</h1>
+
+    <div class="info">
+      <h3>Why APIs Might Be Failing:</h3>
+      <ul>
+        <li>
+          <strong>Chrome Version:</strong> Need Chrome 127+ for full AI support
+        </li>
+        <li><strong>Chrome Flags:</strong> AI features need to be enabled</li>
+        <li>
+          <strong>Hardware Requirements:</strong> Need sufficient RAM/VRAM
+        </li>
+        <li>
+          <strong>Operating System:</strong> Some AI features are OS-specific
+        </li>
+        <li>
+          <strong>Location:</strong> Some AI features are region-restricted
+        </li>
+      </ul>
+    </div>
+
+    <div id="results"></div>
+
+    <div class="info">
+      <h3>How to Enable Chrome AI Features:</h3>
+      <ol>
+        <li>Go to <code>chrome://flags/</code></li>
+        <li>
+          Search for and enable these flags:
+          <ul>
+            <li><code>#prompt-api-for-gemini-nano</code></li>
+            <li><code>#optimization-guide-on-device-model</code></li>
+            <li><code>#prompt-api-for-gemini-nano-multimodal-input</code></li>
+          </ul>
+        </li>
+        <li>Restart Chrome completely</li>
+        <li>Refresh this page and check again</li>
+      </ol>
+    </div>
+
+    <script>
+      function addResult(title, status, details) {
+        const resultsDiv = document.getElementById("results");
+        const div = document.createElement("div");
+        div.className = `check-item ${status}`;
+        div.innerHTML = `<strong>${title}</strong><br>${details}`;
+        resultsDiv.appendChild(div);
+      }
+
+      function checkAIAPIs() {
+        console.log("=== CHROME AI APIs CHECK ===");
+
+        // Check Chrome version
+        const userAgent = navigator.userAgent;
+        const chromeMatch = userAgent.match(/Chrome\/(\d+)/);
+        const chromeVersion = chromeMatch ? parseInt(chromeMatch[1]) : 0;
+
+        console.log("Chrome version:", chromeVersion);
+        if (chromeVersion >= 127) {
+          addResult(
+            "Chrome Version",
+            "success",
+            `Chrome ${chromeVersion} - Good! (Need 127+)`
+          );
+        } else {
+          addResult(
+            "Chrome Version",
+            "failure",
+            `Chrome ${chromeVersion} - Need Chrome 127+ for full AI support`
+          );
+        }
+
+        // Check window.ai
+        console.log("Checking window.ai...");
+        if (typeof window !== "undefined" && "ai" in window) {
+          console.log("window.ai found:", window.ai);
+          if (window.ai && "languageModel" in window.ai) {
+            addResult(
+              "window.ai.languageModel",
+              "success",
+              "Available - Chrome Nano AI ready!"
+            );
+          } else {
+            addResult(
+              "window.ai.languageModel",
+              "warning",
+              "window.ai exists but languageModel not available"
+            );
+          }
+        } else {
+          addResult(
+            "window.ai",
+            "failure",
+            "Not available - Enable Chrome flags"
+          );
+        }
+
+        // Check navigator.ai
+        console.log("Checking navigator.ai...");
+        if ("ai" in navigator) {
+          console.log("navigator.ai found:", navigator.ai);
+          const availableAPIs = [];
+
+          if ("prompt" in navigator.ai) availableAPIs.push("prompt");
+          if ("summarizer" in navigator.ai) availableAPIs.push("summarizer");
+          if ("translator" in navigator.ai) availableAPIs.push("translator");
+          if ("writer" in navigator.ai) availableAPIs.push("writer");
+
+          if (availableAPIs.length > 0) {
+            addResult(
+              "navigator.ai APIs",
+              "success",
+              `Available: ${availableAPIs.join(", ")}`
+            );
+          } else {
+            addResult(
+              "navigator.ai APIs",
+              "warning",
+              "navigator.ai exists but no specific APIs found"
+            );
+          }
+        } else {
+          addResult(
+            "navigator.ai",
+            "failure",
+            "Not available - Enable Chrome flags"
+          );
+        }
+
+        // Check hardware info
+        console.log("Checking hardware info...");
+        if ("deviceMemory" in navigator) {
+          const memory = navigator.deviceMemory;
+          if (memory >= 8) {
+            addResult(
+              "Device Memory",
+              "success",
+              `${memory}GB RAM - Good for AI processing`
+            );
+          } else {
+            addResult(
+              "Device Memory",
+              "warning",
+              `${memory}GB RAM - May be insufficient for AI processing`
+            );
+          }
+        } else {
+          addResult("Device Memory", "info", "Memory info not available");
+        }
+
+        // Check if we're in a secure context
+        if (window.isSecureContext) {
+          addResult(
+            "Secure Context",
+            "success",
+            "HTTPS or localhost - Required for AI APIs"
+          );
+        } else {
+          addResult(
+            "Secure Context",
+            "failure",
+            "Not secure - AI APIs require HTTPS or localhost"
+          );
+        }
+
+        // Test actual API calls
+        testAPICalls();
+      }
+
+      async function testAPICalls() {
+        console.log("Testing actual API calls...");
+
+        // Test window.ai
+        if (
+          typeof window !== "undefined" &&
+          "ai" in window &&
+          "languageModel" in window.ai
+        ) {
+          try {
+            console.log("Testing window.ai.languageModel.create...");
+            const session = await window.ai.languageModel.create({
+              temperature: 0.7,
+              topK: 40,
+            });
+            console.log("window.ai session created successfully:", session);
+            addResult("window.ai Test", "success", "API call successful!");
+          } catch (error) {
+            console.error("window.ai test failed:", error);
+            addResult(
+              "window.ai Test",
+              "failure",
+              `API call failed: ${error.message}`
+            );
+          }
+        }
+
+        // Test navigator.ai.prompt
+        if ("ai" in navigator && "prompt" in navigator.ai) {
+          try {
+            console.log("Testing navigator.ai.prompt...");
+            const result = await navigator.ai.prompt("Hello, how are you?");
+            console.log("navigator.ai.prompt result:", result);
+            addResult(
+              "navigator.ai.prompt Test",
+              "success",
+              "API call successful!"
+            );
+          } catch (error) {
+            console.error("navigator.ai.prompt test failed:", error);
+            addResult(
+              "navigator.ai.prompt Test",
+              "failure",
+              `API call failed: ${error.message}`
+            );
+          }
+        }
+
+        // Test navigator.ai.summarizer
+        if ("ai" in navigator && "summarizer" in navigator.ai) {
+          try {
+            console.log("Testing navigator.ai.summarizer...");
+            const result = await navigator.ai.summarizer.summarize({
+              text: "This is a test text for summarization.",
+              maxLength: 50,
+            });
+            console.log("navigator.ai.summarizer result:", result);
+            addResult(
+              "navigator.ai.summarizer Test",
+              "success",
+              "API call successful!"
+            );
+          } catch (error) {
+            console.error("navigator.ai.summarizer test failed:", error);
+            addResult(
+              "navigator.ai.summarizer Test",
+              "failure",
+              `API call failed: ${error.message}`
+            );
+          }
+        }
+      }
+
+      // Run the check when page loads
+      document.addEventListener("DOMContentLoaded", checkAIAPIs);
+    </script>
+  </body>
+</html>
