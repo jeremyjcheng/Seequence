@@ -9,23 +9,25 @@
         font-family: Arial, sans-serif;
         margin: 20px;
       }
-      .test-section {
-        margin: 20px 0;
-        padding: 15px;
-        border: 1px solid #ccc;
+      .test-result {
+        margin: 10px 0;
+        padding: 10px;
         border-radius: 5px;
       }
       .success {
         background-color: #d4edda;
-        border-color: #c3e6cb;
+        border: 1px solid #c3e6cb;
+        color: #155724;
       }
       .error {
         background-color: #f8d7da;
-        border-color: #f5c6cb;
+        border: 1px solid #f5c6cb;
+        color: #721c24;
       }
       .info {
         background-color: #d1ecf1;
-        border-color: #bee5eb;
+        border: 1px solid #bee5eb;
+        color: #0c5460;
       }
       button {
         padding: 10px 15px;
@@ -39,289 +41,142 @@
       button:hover {
         background: #0056b3;
       }
-      pre {
-        background: #f8f9fa;
-        padding: 10px;
-        border-radius: 3px;
-        overflow-x: auto;
+      #results {
+        margin-top: 20px;
       }
     </style>
   </head>
   <body>
-    <h1>Chrome Nano AI APIs Test</h1>
+    <h1>🧪 Chrome AI APIs Test</h1>
 
-    <div class="test-section info">
-      <h3>Chrome Version Info</h3>
-      <p id="chrome-version"></p>
+    <div class="test-result info">
+      <h3>📋 Instructions</h3>
+      <p>This page tests if Chrome's built-in AI APIs are available.</p>
+      <p>If they're not working, you need to enable the Chrome flags.</p>
     </div>
 
-    <div class="test-section" id="navigator-test">
-      <h3>Chrome Nano AI Test</h3>
-      <button onclick="testChromeNano()">Test Chrome Nano AI</button>
-      <div id="navigator-results"></div>
-    </div>
+    <button onclick="testChromeAI()">Test Chrome AI APIs</button>
+    <button onclick="testPromptAPI()">Test Prompt API</button>
+    <button onclick="testSummarizerAPI()">Test Summarizer API</button>
+    <button onclick="clearResults()">Clear Results</button>
 
-    <div class="test-section" id="window-test">
-      <h3>Window AI APIs Test</h3>
-      <button onclick="testWindowAPIs()">Test Window APIs</button>
-      <div id="window-results"></div>
-    </div>
-
-    <div class="test-section" id="self-test">
-      <h3>Self AI APIs Test (Service Worker Context)</h3>
-      <button onclick="testSelfAPIs()">Test Self APIs</button>
-      <div id="self-results"></div>
-    </div>
-
-    <div class="test-section" id="all-properties">
-      <h3>All Available Properties</h3>
-      <button onclick="showAllProperties()">Show All Properties</button>
-      <div id="all-properties-results"></div>
-    </div>
+    <div id="results"></div>
 
     <script>
-      // Display Chrome version
-      document.getElementById("chrome-version").textContent =
-        navigator.userAgent;
-
-      async function testChromeNano() {
-        const results = document.getElementById("navigator-results");
-        results.innerHTML = "<p>Testing Chrome Nano AI...</p>";
-
-        let html = "<h4>Chrome Nano AI Test Results:</h4>";
-
-        // Test window.ai availability
-        const hasWindowAI = "ai" in window;
-        html += `<p><strong>window.ai:</strong> ${
-          hasWindowAI ? "Available" : "Not Available"
-        }</p>`;
-
-        if (hasWindowAI) {
-          // Test languageModel
-          const hasLanguageModel = "languageModel" in window.ai;
-          html += `<p><strong>window.ai.languageModel:</strong> ${
-            hasLanguageModel ? "Available" : "Not Available"
-          }</p>`;
-
-          if (hasLanguageModel) {
-            try {
-              // Test creating a session
-              const session = await window.ai.languageModel.create({
-                temperature: 0.7,
-                topK: 40,
-              });
-              html += `<p><strong>Session Creation:</strong> Success</p>`;
-
-              // Test a simple prompt
-              const result = await session.prompt(
-                "Hello, this is a test of Chrome Nano AI."
-              );
-              html += `<p><strong>Prompt Test:</strong> Success - ${result}</p>`;
-
-              html += `<p><strong>Chrome Nano AI Status:</strong> Fully Working!</p>`;
-            } catch (error) {
-              html += `<p><strong>Chrome Nano Test:</strong> Error - ${error.message}</p>`;
-            }
-          }
-        }
-
-        results.innerHTML = html;
-        results.className = hasWindowAI
-          ? "test-section success"
-          : "test-section error";
+      function addResult(message, type = "info") {
+        const resultsDiv = document.getElementById("results");
+        const resultDiv = document.createElement("div");
+        resultDiv.className = `test-result ${type}`;
+        resultDiv.textContent = message;
+        resultsDiv.appendChild(resultDiv);
+        console.log(message);
       }
 
-      async function testNavigatorAPIs() {
-        const results = document.getElementById("navigator-results");
-        results.innerHTML = "<p>Testing Navigator APIs...</p>";
-
-        let html = "<h4>Navigator API Test Results:</h4>";
-
-        // Test window.ai.summarizer
-        const hasSummarizer = "ai" in window && "summarizer" in window.ai;
-        html += `<p><strong>window.ai.summarizer:</strong> ${
-          hasSummarizer ? "Available" : "Not Available"
-        }</p>`;
-
-        if (hasSummarizer) {
-          try {
-            const result = await window.ai.summarizer.summarize({
-              text: "This is a test of the Chrome built-in Summarizer API.",
-              maxLength: 50,
-            });
-            html += `<p><strong>Summarizer Test:</strong> Success - ${result}</p>`;
-          } catch (error) {
-            html += `<p><strong>Summarizer Test:</strong> Error - ${error.message}</p>`;
-          }
-        }
-
-        // Test window.ai.translator
-        const hasTranslator = "ai" in window && "translator" in window.ai;
-        html += `<p><strong>window.ai.translator:</strong> ${
-          hasTranslator ? "Available" : "Not Available"
-        }</p>`;
-
-        if (hasTranslator) {
-          try {
-            const result = await window.ai.translator.translate({
-              text: "Hello world",
-              targetLanguage: "es",
-            });
-            html += `<p><strong>Translator Test:</strong> Success - ${result}</p>`;
-          } catch (error) {
-            html += `<p><strong>Translator Test:</strong> Error - ${error.message}</p>`;
-          }
-        }
-
-        // Test other potential AI APIs
-        const aiRelatedKeys = window.ai
-          ? Object.keys(window.ai).filter(
-              (key) =>
-                key.toLowerCase().includes("ai") ||
-                key.toLowerCase().includes("summarizer") ||
-                key.toLowerCase().includes("translator") ||
-                key.toLowerCase().includes("gemini") ||
-                key.toLowerCase().includes("prompt")
-            )
-          : [];
-
-        html += `<p><strong>AI-related Window Properties:</strong> ${
-          aiRelatedKeys.length > 0 ? aiRelatedKeys.join(", ") : "None found"
-        }</p>`;
-
-        results.innerHTML = html;
-        results.className =
-          hasSummarizer || hasTranslator
-            ? "test-section success"
-            : "test-section error";
+      function clearResults() {
+        document.getElementById("results").innerHTML = "";
       }
 
-      async function testWindowAPIs() {
-        const results = document.getElementById("window-results");
-        results.innerHTML = "<p>Testing Window APIs...</p>";
+      function testChromeAI() {
+        addResult("=== TESTING CHROME AI APIs ===", "info");
 
-        let html = "<h4>Window API Test Results:</h4>";
+        // Test navigator.ai
+        if (navigator.ai) {
+          addResult("✅ navigator.ai is available", "success");
+
+          // Test specific APIs
+          if ("prompt" in navigator.ai) {
+            addResult("✅ navigator.ai.prompt is available", "success");
+          } else {
+            addResult("❌ navigator.ai.prompt is NOT available", "error");
+          }
+
+          if ("summarizer" in navigator.ai) {
+            addResult("✅ navigator.ai.summarizer is available", "success");
+          } else {
+            addResult("❌ navigator.ai.summarizer is NOT available", "error");
+          }
+
+          if ("writer" in navigator.ai) {
+            addResult("✅ navigator.ai.writer is available", "success");
+          } else {
+            addResult("❌ navigator.ai.writer is NOT available", "error");
+          }
+        } else {
+          addResult("❌ navigator.ai is NOT available", "error");
+          addResult("You need to enable Chrome flags:", "error");
+          addResult("1. Go to chrome://flags/", "error");
+          addResult("2. Enable: #prompt-api-for-gemini-nano", "error");
+          addResult("3. Enable: #optimization-guide-on-device-model", "error");
+          addResult("4. Restart Chrome", "error");
+        }
 
         // Test window.ai
-        const hasWindowAI = "ai" in window;
-        html += `<p><strong>window.ai:</strong> ${
-          hasWindowAI ? "Available" : "Not Available"
-        }</p>`;
+        if (window.ai) {
+          addResult("✅ window.ai is available", "success");
 
-        if (hasWindowAI) {
-          html += `<p><strong>window.ai properties:</strong> ${Object.keys(
-            window.ai
-          ).join(", ")}</p>`;
+          if ("languageModel" in window.ai) {
+            addResult("✅ window.ai.languageModel is available", "success");
+          } else {
+            addResult("❌ window.ai.languageModel is NOT available", "error");
+          }
+        } else {
+          addResult("❌ window.ai is NOT available", "error");
+        }
 
-          // Test window.ai.prompt if available
-          if ("prompt" in window.ai) {
-            try {
-              const result = await window.ai.prompt.prompt({
-                prompt: "Hello, this is a test.",
-              });
-              html += `<p><strong>Prompt Test:</strong> Success - ${result}</p>`;
-            } catch (error) {
-              html += `<p><strong>Prompt Test:</strong> Error - ${error.message}</p>`;
-            }
+        // Test Chrome version
+        const userAgent = navigator.userAgent;
+        const chromeMatch = userAgent.match(/Chrome\/(\d+)/);
+        if (chromeMatch) {
+          const chromeVersion = parseInt(chromeMatch[1]);
+          addResult(`Chrome version: ${chromeVersion}`, "info");
+          if (chromeVersion < 120) {
+            addResult("⚠️ Chrome AI APIs require Chrome 120+", "error");
           }
         }
-
-        results.innerHTML = html;
-        results.className = hasWindowAI
-          ? "test-section success"
-          : "test-section error";
       }
 
-      function testSelfAPIs() {
-        const results = document.getElementById("self-results");
-        results.innerHTML =
-          "<p>Testing Self APIs (Service Worker Context)...</p>";
+      async function testPromptAPI() {
+        addResult("=== TESTING PROMPT API ===", "info");
 
-        let html = "<h4>Self API Test Results (Service Worker Context):</h4>";
-
-        // Test self.ai
-        const hasSelfAI = "ai" in self;
-        html += `<p><strong>self.ai:</strong> ${
-          hasSelfAI ? "Available" : "Not Available"
-        }</p>`;
-
-        if (hasSelfAI) {
-          html += `<p><strong>self.ai properties:</strong> ${Object.keys(
-            self.ai
-          ).join(", ")}</p>`;
+        if (!navigator.ai || !navigator.ai.prompt) {
+          addResult("❌ Prompt API not available", "error");
+          return;
         }
 
-        // Test other self properties
-        const aiRelatedSelfKeys = Object.keys(self).filter(
-          (key) =>
-            key.toLowerCase().includes("ai") ||
-            key.toLowerCase().includes("summarizer") ||
-            key.toLowerCase().includes("translator") ||
-            key.toLowerCase().includes("gemini") ||
-            key.toLowerCase().includes("prompt")
-        );
-
-        html += `<p><strong>AI-related Self Properties:</strong> ${
-          aiRelatedSelfKeys.length > 0
-            ? aiRelatedSelfKeys.join(", ")
-            : "None found"
-        }</p>`;
-
-        results.innerHTML = html;
-        results.className = hasSelfAI
-          ? "test-section success"
-          : "test-section error";
+        try {
+          addResult("Testing navigator.ai.prompt...", "info");
+          const result = await navigator.ai.prompt("Hello, how are you?");
+          addResult(`✅ Prompt API works! Result: ${result}`, "success");
+        } catch (error) {
+          addResult(`❌ Prompt API failed: ${error.message}`, "error");
+        }
       }
 
-      function showAllProperties() {
-        const results = document.getElementById("all-properties-results");
+      async function testSummarizerAPI() {
+        addResult("=== TESTING SUMMARIZER API ===", "info");
 
-        let html = "<h4>All Available Properties:</h4>";
+        if (!navigator.ai || !navigator.ai.summarizer) {
+          addResult("❌ Summarizer API not available", "error");
+          return;
+        }
 
-        html += "<h5>Navigator Properties:</h5>";
-        html += "<pre>" + Object.keys(navigator).sort().join("\n") + "</pre>";
-
-        html += "<h5>Window Properties (AI-related):</h5>";
-        const windowAIKeys = Object.keys(window).filter(
-          (key) =>
-            key.toLowerCase().includes("ai") ||
-            key.toLowerCase().includes("summarizer") ||
-            key.toLowerCase().includes("translator") ||
-            key.toLowerCase().includes("gemini") ||
-            key.toLowerCase().includes("prompt")
-        );
-        html +=
-          "<pre>" +
-          (windowAIKeys.length > 0
-            ? windowAIKeys.join("\n")
-            : "No AI-related properties found") +
-          "</pre>";
-
-        html += "<h5>Self Properties (AI-related):</h5>";
-        const selfAIKeys = Object.keys(self).filter(
-          (key) =>
-            key.toLowerCase().includes("ai") ||
-            key.toLowerCase().includes("summarizer") ||
-            key.toLowerCase().includes("translator") ||
-            key.toLowerCase().includes("gemini") ||
-            key.toLowerCase().includes("prompt")
-        );
-        html +=
-          "<pre>" +
-          (selfAIKeys.length > 0
-            ? selfAIKeys.join("\n")
-            : "No AI-related properties found") +
-          "</pre>";
-
-        results.innerHTML = html;
-        results.className = "test-section info";
+        try {
+          addResult("Testing navigator.ai.summarizer...", "info");
+          const testText =
+            "Eric Clapton is a famous guitarist who played with Cream and Derek and the Dominos. He is known for songs like Layla and Tears in Heaven.";
+          const result = await navigator.ai.summarizer.summarize({
+            text: testText,
+            maxLength: 50,
+          });
+          addResult(`✅ Summarizer API works! Result: ${result}`, "success");
+        } catch (error) {
+          addResult(`❌ Summarizer API failed: ${error.message}`, "error");
+        }
       }
 
-      // Auto-run tests on page load
+      // Auto-run test on page load
       window.addEventListener("load", () => {
-        testChromeNano();
-        testWindowAPIs();
-        testSelfAPIs();
+        setTimeout(testChromeAI, 1000);
       });
     </script>
   </body>

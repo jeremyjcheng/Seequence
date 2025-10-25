@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Chrome Flags Checker</title>
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+        margin: 20px;
+      }
+      .flag-check {
+        margin: 10px 0;
+        padding: 15px;
+        border-radius: 5px;
+      }
+      .success {
+        background-color: #d4edda;
+        border: 1px solid #c3e6cb;
+      }
+      .error {
+        background-color: #f8d7da;
+        border: 1px solid #f5c6cb;
+      }
+      .info {
+        background-color: #d1ecf1;
+        border: 1px solid #bee5eb;
+      }
+      .code {
+        background: #f8f9fa;
+        padding: 10px;
+        border-radius: 3px;
+        font-family: monospace;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>🔍 Chrome AI Flags Checker</h1>
+
+    <div class="flag-check info">
+      <h3>📋 Current Status</h3>
+      <div id="status"></div>
+    </div>
+
+    <div class="flag-check info">
+      <h3>🔧 Required Chrome Flags</h3>
+      <p>Go to <code>chrome://flags/</code> and enable these flags:</p>
+      <ul>
+        <li>
+          <strong>#prompt-api-for-gemini-nano</strong> → Set to
+          <strong>Enabled</strong>
+        </li>
+        <li>
+          <strong>#optimization-guide-on-device-model</strong> → Set to
+          <strong>Enabled</strong>
+        </li>
+        <li>
+          <strong>#ai-powered-search</strong> → Set to <strong>Enabled</strong>
+        </li>
+        <li>
+          <strong>#ai-powered-search-omnibox</strong> → Set to
+          <strong>Enabled</strong>
+        </li>
+        <li>
+          <strong>#ai-powered-search-omnibox-ntp</strong> → Set to
+          <strong>Enabled</strong>
+        </li>
+      </ul>
+      <p><strong>After enabling flags, restart Chrome completely!</strong></p>
+    </div>
+
+    <div class="flag-check info">
+      <h3>🧪 Test Results</h3>
+      <div id="test-results"></div>
+    </div>
+
+    <script>
+      function addResult(message, type = "info") {
+        const div = document.createElement("div");
+        div.className = `flag-check ${type}`;
+        div.innerHTML = message;
+        document.getElementById("test-results").appendChild(div);
+      }
+
+      function checkChromeAI() {
+        addResult("<h4>🔍 Checking Chrome AI APIs...</h4>", "info");
+
+        // Check navigator.ai
+        if (navigator.ai) {
+          addResult("✅ navigator.ai is available", "success");
+
+          if ("prompt" in navigator.ai) {
+            addResult("✅ navigator.ai.prompt is available", "success");
+          } else {
+            addResult("❌ navigator.ai.prompt is NOT available", "error");
+          }
+
+          if ("summarizer" in navigator.ai) {
+            addResult("✅ navigator.ai.summarizer is available", "success");
+          } else {
+            addResult("❌ navigator.ai.summarizer is NOT available", "error");
+          }
+        } else {
+          addResult("❌ navigator.ai is NOT available", "error");
+        }
+
+        // Check window.ai
+        if (window.ai) {
+          addResult("✅ window.ai is available", "success");
+
+          if ("languageModel" in window.ai) {
+            addResult("✅ window.ai.languageModel is available", "success");
+          } else {
+            addResult("❌ window.ai.languageModel is NOT available", "error");
+          }
+        } else {
+          addResult("❌ window.ai is NOT available", "error");
+        }
+
+        // Check Chrome version
+        const userAgent = navigator.userAgent;
+        const chromeMatch = userAgent.match(/Chrome\/(\d+)/);
+        if (chromeMatch) {
+          const chromeVersion = parseInt(chromeMatch[1]);
+          addResult(`Chrome version: ${chromeVersion}`, "info");
+          if (chromeVersion < 120) {
+            addResult("⚠️ Chrome AI APIs require Chrome 120+", "error");
+          }
+        }
+
+        // Check if we're in a secure context
+        if (window.isSecureContext) {
+          addResult("✅ Secure context (HTTPS)", "success");
+        } else {
+          addResult("❌ Not in secure context - AI APIs may not work", "error");
+        }
+      }
+
+      // Run check on page load
+      window.addEventListener("load", () => {
+        checkChromeAI();
+      });
+    </script>
+  </body>
+</html>

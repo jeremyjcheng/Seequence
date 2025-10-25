@@ -96,6 +96,7 @@ class ContentAIProcessor {
         console.log("   2. Enable: #prompt-api-for-gemini-nano");
         console.log("   3. Enable: #optimization-guide-on-device-model");
         console.log("   4. Restart Chrome");
+        console.log("Extension will work with heuristic fallbacks for now");
       }
 
       return this.isAvailable;

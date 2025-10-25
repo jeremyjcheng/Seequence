@@ -22,11 +22,16 @@ script.onload = function () {
         "Content: Available APIs:",
         window.contentAIProcessor.availableAPIs
       );
+      console.log(
+        "Content: Is Available:",
+        window.contentAIProcessor.isAvailable
+      );
     } else {
       console.error("Content: AI Processor not found in main world");
       console.error("Content: window.contentAIProcessor is undefined");
+      console.error("Content: This is a script injection issue");
     }
-  }, 500); // Increased timeout
+  }, 1000); // Increased timeout to 1 second
 };
 script.onerror = function (error) {
   console.error("Content: Failed to load AI processor script:", error);
@@ -169,27 +174,14 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
       sendResponse({ success: true, available: true });
     } else {
       console.log("Content: AI Processor not available in main world");
-      console.log("Content: Attempting to re-inject AI processor...");
-
-      // Try to re-inject the AI processor
-      const script = document.createElement("script");
-      script.src = chrome.runtime.getURL("content/ai-processor.js");
-      script.onload = function () {
-        console.log("Content: AI Processor re-injected successfully");
-        setTimeout(() => {
-          if (window.contentAIProcessor) {
-            console.log(
-              "Content: AI Processor now available after re-injection"
-            );
-          }
-        }, 100);
-      };
-      document.head.appendChild(script);
+      console.log(
+        "Content: This is expected if Chrome AI APIs are not enabled"
+      );
 
       sendResponse({
         success: false,
         available: false,
-        error: "AI Processor not available - attempting re-injection",
+        error: "AI Processor not available - Chrome AI APIs not enabled",
       });
     }
   } else {
