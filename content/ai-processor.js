@@ -1069,7 +1069,19 @@ window.addEventListener("message", async (event) => {
 
   const requestId = data.requestId;
   try {
-    if (data.action === "checkAvailability") {
+    if (data.action === "ping") {
+      console.log("AI Processor: Ping received from content script");
+      window.postMessage(
+        {
+          __seequence: true,
+          type: "response",
+          requestId,
+          success: true,
+          data: { message: "AI Processor is alive and ready" },
+        },
+        "*"
+      );
+    } else if (data.action === "checkAvailability") {
       await window.contentAIProcessor.checkAvailability();
       window.postMessage(
         {

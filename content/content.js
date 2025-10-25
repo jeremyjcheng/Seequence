@@ -16,22 +16,25 @@ script.onload = function () {
   console.log("Content: AI Processor script loaded successfully");
   // Wait a bit for the script to initialize
   setTimeout(() => {
-    if (window.contentAIProcessor) {
-      console.log("Content: AI Processor is available in main world");
-      console.log(
-        "Content: Available APIs:",
-        window.contentAIProcessor.availableAPIs
-      );
-      console.log(
-        "Content: Is Available:",
-        window.contentAIProcessor.isAvailable
-      );
-    } else {
-      console.error("Content: AI Processor not found in main world");
-      console.error("Content: window.contentAIProcessor is undefined");
-      console.error("Content: This is a script injection issue");
-    }
-  }, 1000); // Increased timeout to 1 second
+    // Content script runs in isolated world, can't directly access main world
+    // We need to communicate via postMessage instead
+    console.log(
+      "Content: Testing communication with main world AI processor..."
+    );
+
+    // Send a ping to the main world to test communication
+    window.postMessage(
+      {
+        __seequence: true,
+        action: "ping",
+        source: "content-script",
+        requestId: "ping-test",
+      },
+      "*"
+    );
+
+    console.log("Content: Ping sent to main world AI processor");
+  }, 1000);
 };
 script.onerror = function (error) {
   console.error("Content: Failed to load AI processor script:", error);
@@ -47,7 +50,20 @@ const pendingRequests = new Map();
 window.addEventListener("message", (event) => {
   if (event.source !== window) return; // only accept messages from same page
   const data = event.data;
-  if (!data || data.__seequence !== true || data.type !== "response") return;
+  if (!data || data.__seequence !== true) return;
+
+  // Handle ping response
+  if (data.type === "response" && data.requestId === "ping-test") {
+    console.log(
+      "Content: Ping response received from AI processor:",
+      data.data
+    );
+    console.log("Content: AI Processor communication is working!");
+    return;
+  }
+
+  // Handle other responses
+  if (data.type !== "response") return;
 
   const { requestId, success } = data;
   const entry = pendingRequests.get(requestId);
